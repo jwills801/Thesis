@@ -5,10 +5,25 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git ];
+  packages = [ pkgs.git  
+               pkgs.pre-commit
+               ];          
 
   # https://devenv.sh/languages/
-  languages.python.enable = true;
+    # Enable Python
+    languages.python.enable = true;
+
+    # Create a virtual environment and install wecopttool
+    languages.python.venv = {
+      enable = true;
+      requirements = ''
+        wecopttool
+        nbstripout
+      '';
+    };
+    # nbstripout is for removing the output of jupyter notebooks before they are commited
+      # this saves space in git and makes it so you have to regenerate the output - saving potential errors
+      # The nbstripout is made a hook in the file named .pre-commit-config.yaml
 
   # https://devenv.sh/processes/
   # processes.cargo-watch.exec = "cargo-watch";
