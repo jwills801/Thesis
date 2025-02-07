@@ -7,7 +7,40 @@
   # https://devenv.sh/packages/
   packages = [ pkgs.git  
                pkgs.pre-commit
+               pkgs.libGLU           # necessary for wecopttool.geom
+               pkgs.libGL            # necessary for wecopttool.geom
+               pkgs.xorg.libXrender  # necessary for wecopttool.geom
+               pkgs.xorg.libXcursor  # necessary for wecopttool.geom
+               pkgs.xorg.libXfixes   # necessary for wecopttool.geom
+               pkgs.xorg.libXft      # necessary for wecopttool.geom
+               pkgs.fontconfig       # necessary for wecopttool.geom
+               pkgs.xorg.libXinerama # necessary for wecopttool.geom
+               pkgs.xorg.libX11      # necessary for wecopttool.geom
                ];          
+
+# configure pre-commit to do the things we want (format, lint, and clear)
+git-hooks = {
+  hooks = {
+    ruff.enable = true; # linter and formater for python
+  };
+
+  hooks.nbstripout = {
+    enable = true;
+
+    # The name of the hook (appears on the report table):
+    name = "nbstripout";
+
+    # The command to execute (mandatory):
+    entry = "nbstripout";
+
+    # The pattern of files to run on
+    files = "\\.ipynb$";
+
+    # List of file types to run on
+    types = [ "text" ];
+
+    language = "python";
+};
 
   # https://devenv.sh/languages/
     # Enable Python
@@ -17,13 +50,11 @@
     languages.python.venv = {
       enable = true;
       requirements = ''
-        wecopttool
-        nbstripout
+      wecopttool[geometry]
+      nbstripout # strips my jupyter notebooks of outputs before committing
+      jupyter
       '';
     };
-    # nbstripout is for removing the output of jupyter notebooks before they are commited
-      # this saves space in git and makes it so you have to regenerate the output - saving potential errors
-      # The nbstripout is made a hook in the file named .pre-commit-config.yaml
 
   # https://devenv.sh/processes/
   # processes.cargo-watch.exec = "cargo-watch";
