@@ -24,6 +24,7 @@ git-hooks = {
     ruff.enable = true; # linter and formater for python
   };
 
+  # Configure nbstripout to run everytime we commit a jupyter notebook file
   hooks.nbstripout = {
     enable = true;
 
