@@ -41,6 +41,7 @@ git-hooks = {
     types = [ "text" ];
 
     language = "python";
+  };
 };
 
   # https://devenv.sh/languages/
