@@ -2,6 +2,11 @@
 *.mat
 *.log
 *.slxc
+*.slx.*
+
+**/temp/
+**/slprj/
+**/output/
 
 # Devenv
 .devenv*
