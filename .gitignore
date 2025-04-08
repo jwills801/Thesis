@@ -1,5 +1,7 @@
 *.pdf
 *.mat
+*.log
+*.slxc
 
 # Devenv
 .devenv*
