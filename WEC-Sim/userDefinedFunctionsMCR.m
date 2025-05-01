@@ -1,1 +1,1 @@
-EnergyVector(imcr) = Energy
+EnergyVector(imcr) = Energy;

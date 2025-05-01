@@ -5,12 +5,12 @@ simu.mode = 'normal';                   % Specify Simulation Mode ('normal','acc
 simu.explorer = 'off';                   % Turn SimMechanics Explorer (on/off)
 simu.startTime = 0;                     % Simulation Start Time [s]
 simu.rampTime = 0;                    % Wave Ramp Time [s]
-simu.endTime = 800;                     % Simulation End Time [s]        
+simu.endTime = 160;                     % Simulation End Time [s]        
 simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
-simu.dt = 1e-2;                          % Simulation Time-Step [s]
+simu.dt = 1e-3;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
-%simu.mcrMatFile = 'mcr.mat';
-simu.mcrMatFile = 'pressure_mcr.mat';
+% simu.mcrMatFile = 'mcr.mat';
+% simu.mcrMatFile = 'pressure_mcr.mat';
 
 %% Wave Information
 % % noWaveCIC, no waves with radiation CIC  
@@ -66,16 +66,17 @@ pto(1).location = [0 0 -8.9];                   % PTO Location [m]
 %% Rotary to Linear Adjustable Rod
 crank_z = 3; % [m] Seems to be the vertical distance up the flap that the rod is connected to
 cylinderStroke = 3; % [m] % stroke of the hydraulic cylinder
+initalCylinderLength = 1.5*cylinderStroke;
+crank_x = sqrt(initalCylinderLength^2 - crank_z^2);
 % calculate the initial length of the cylinder
     % Fully retracted - the total length is about the stroke length
     % Fully extended - the total length is about 2x the stroke length
     % Half way - the total length is about 1.5x the stroke length
 ptoSim(1) = ptoSimClass('adjustableRod');
-ptoSim(1).adjustableRod.crank = 3; % [m] Seems to be the vertical distance up the flap that the rod is connected to
+ptoSim(1).adjustableRod.crank = crank_z;
 ptoSim(1).adjustableRod.offset = 0;
 ptoSim(1).adjustableRod.rodInit = 1.5*cylinderStroke; % [m] Initial length of the cylinder;
-ptoSim(1).adjustableRod.initalCylinderLength = 1.5*cylinderStroke;
-initalCylinderLength = 1.5*cylinderStroke;
+ptoSim(1).adjustableRod.initalCylinderLength = initalCylinderLength;
 
 %% load PTO parameters
 Parameters
