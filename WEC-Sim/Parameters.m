@@ -10,7 +10,7 @@ params.beta = 1.8e9;
 params.valveConstant = 1e-3;
 
 %% For active only
-%Kp = 7.7426e+06; Ki = 7.7426e+06;
+Kp = 7.7426e+06; Ki = 7.7426e+06;
 
 %% For passive only
 params.pressure = 7e6;

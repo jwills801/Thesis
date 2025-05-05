@@ -7,7 +7,7 @@ simu.startTime = 0;                     % Simulation Start Time [s]
 simu.rampTime = 0;                    % Wave Ramp Time [s]
 simu.endTime = 160;                     % Simulation End Time [s]        
 simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
-simu.dt = 1e-3;                          % Simulation Time-Step [s]
+simu.dt = 1e-1;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
 % simu.mcrMatFile = 'mcr.mat';
 % simu.mcrMatFile = 'pressure_mcr.mat';
