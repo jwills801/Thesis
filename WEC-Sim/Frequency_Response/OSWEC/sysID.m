@@ -71,6 +71,11 @@ xlabel('Frequency [rad/s]'), ylabel('Z Power Spectrum [dB]'),grid
 subplot(212), semilogx(w/dt,angle(1./H)*180/pi)
 xlabel('Frequency [rad/s]'), ylabel('Z Phase [deg]'),grid
 
+figure, subplot(211), semilogx(w/dt/2/pi,10*log10(abs(H)))
+xlabel('Frequency [Hz]'), ylabel('H Power Spectrum [dB]'),grid
+subplot(212), semilogx(w/dt/2/pi,angle(H)*180/pi)
+xlabel('Frequency [Hz]'), ylabel('Phase [deg]'),grid
+
 
 %% Compare to optimal PI gain results
 % Results for high frequency waves

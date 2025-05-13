@@ -9,7 +9,7 @@ simu.endTime = 160;                     % Simulation End Time [s]
 simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
 simu.dt = 1e-1;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
-% simu.mcrMatFile = 'mcr.mat';
+simu.mcrMatFile = 'mcr.mat';
 % simu.mcrMatFile = 'pressure_mcr.mat';
 
 %% Wave Information
@@ -24,7 +24,7 @@ simu.cicEndTime = 30;                   % Specify CI Time [s]
 % Irregular Waves using PM Spectrum with Directionality 
 waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
 waves.height = 2.5;                     % Significant Wave Height [m]
-waves.period = 8;                       % Peak Period [s]
+waves.period = 20;                       % Peak Period [s]
 waves.spectrumType = 'PM';              % Specify Spectrum Type
 waves.phaseSeed = 1;
 % waves.direction = [0,30,90];            % Wave Directionality [deg]

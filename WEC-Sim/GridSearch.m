@@ -1,6 +1,7 @@
 %% Loop PI gains
-KpVals = logspace(6,8,10);
-KiVals = logspace(6,8,10);
+KpVals = logspace(5,7,10);
+% KiVals = logspace(0,4,3);
+KiVals = 0;
 
 [KpMatrix,KiMatrix] = ndgrid(KpVals,KiVals);
 
