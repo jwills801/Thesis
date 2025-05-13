@@ -8,7 +8,7 @@ params.rodArea = params.capArea/1.5;
 params.cylinderStroke = cylinderStroke;
 params.beta = 1.8e9;
 params.valveConstant = 1e-3;
-params.hoseVolume = pi*.0254^2*1; % n
+params.hoseVolume = params.capArea*5; % [m^3] 5 meters of hose the same diameter as the cap
 
 
 %% For active only
@@ -23,10 +23,10 @@ params.pressure = 7e6;
 
 %% for HHEA only
 load AP_107cc_Sept16.mat
-params.Disp = 2000*1e-6/2/pi; 
+params.Disp = 3000*1e-6/2/pi; 
 params.scaleHECM = params.Disp/Disp; % The map assumes a 107cc motor
 params.P1_Mapping = P1_Mapping;
 params.w1rad_Mapping = w1rad_Mapping;
 params.T1_Act_Mapping = T1_Act_Mapping;
 params.Q1_Act_Mapping = Q1_Act_Mapping;
-params.shaftInertia = 1/2*2*.01^2; % [kg m^2] 5 kg, 0.01m radius motor shaft
+params.shaftInertia = 1/2*10*.01^2; % [kg m^2] 10 kg, 0.05m radius motor shaft
