@@ -23,7 +23,11 @@ params.pressure = 7e6;
 
 %% for HHEA only
 load AP_107cc_Sept16.mat
-params.Disp = 3000*1e-6/2/pi; 
+% calculate required HECM size
+    maxActuatorSpeed = 1; % [m/s]
+    maxMotorSpeed = 500; % [rad/s]
+params.Disp = maxActuatorSpeed*params.rodArea/maxMotorSpeed; % [m^3/rad]
+
 params.scaleHECM = params.Disp/Disp; % The map assumes a 107cc motor
 params.P1_Mapping = P1_Mapping; params.w1rad_Mapping = w1rad_Mapping; params.T1_Act_Mapping = T1_Act_Mapping; params.Q1_Act_Mapping = Q1_Act_Mapping;
 params.P_Map = P_Map; params.Q_Map = Q_Map; params.W_Map = W_Map;
