@@ -3,6 +3,7 @@
 %% Define Force and velocity from WEC-sim
 force = logsout.getElement('force').Values.Data;
 velocity = logsout.getElement('velocity').Values.Data;
+electricPower = logsout.getElement('electricPower').Values.Data;
 t = logsout.getElement('velocity').Values.Time;
 dt = t(2) - t(1);
 
@@ -28,6 +29,7 @@ w = Wrpm.*(2*pi/60); % radians per second
 
 %% I am scaling the pump to be X times larger than the 107 cc b/c That will make -1<fracDisp<1
 Scale = max(abs(Q_Act))/w*2*pi*1e6/107;
+Scale = params.scaleHECM;
 %Scale = 69.7309;  % Regular wave case, no codesign
 %Scale = 55;  % Regular wave case, yes codesign
 %Scale = 63.9467; % for irregular wave case, no codesign
@@ -79,7 +81,6 @@ for i = 1:n
     
     T_Ideal(i) = deltaP(i)*d*fracDisp(i)*Scale;
     TLoss(i) = Scale*(  abs(d*Cv*mu*w) + abs(d*(deltaP(i))*Cf) + abs(fracDisp(i)*Ch*w^2*rho*d^(5/3)/2)  );
-    
     
     
     Q_Ideal(i) = fracDisp(i)*d*w*Scale;
@@ -179,7 +180,7 @@ yyaxis right, plot(t,velocity), ylabel('Velocity [m/s]'), ylim([-ceil(max(abs(ve
 % grid on
 
 figure
-plot(t,-P_in/1000,t,-P_out/1000)
+plot(t,-P_in/1000,t,-P_out/1000,t,electricPower/1e3)
 xlabel('Time [s]')
 ylabel('Power [kW]')
 legend('Power In','Power Out','location','northwest')

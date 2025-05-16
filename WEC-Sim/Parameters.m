@@ -25,7 +25,7 @@ params.pressure = 7e6;
 load AP_107cc_Sept16.mat
 % calculate required HECM size
     maxActuatorSpeed = 1; % [m/s]
-    params.maxMotorSpeed = 500; % [rad/s]
+    params.maxMotorSpeed = 200; % [rad/s]
    
 params.Disp = maxActuatorSpeed*params.rodArea/params.maxMotorSpeed; % [m^3/rad]
 
