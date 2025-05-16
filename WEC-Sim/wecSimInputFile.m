@@ -81,3 +81,11 @@ ptoSim(1).adjustableRod.initalCylinderLength = initalCylinderLength;
 
 %% load PTO parameters
 Parameters
+
+PTO = 'Active Valving';
+% PTO = 'Continuous PI';
+% PTO = 'Discrete PI';
+% PTO = 'EHA';
+% PTO = 'HHEA';
+% PTO = 'Passive Valving';
+% PTO = 'Rectifying';
