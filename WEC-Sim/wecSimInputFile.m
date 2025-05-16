@@ -81,3 +81,5 @@ ptoSim(1).adjustableRod.initalCylinderLength = initalCylinderLength;
 
 %% load PTO parameters
 Parameters
+
+PTO = 3;
