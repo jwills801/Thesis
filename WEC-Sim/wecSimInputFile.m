@@ -4,12 +4,12 @@ simu.simMechanicsFile = 'Flap.slx';    % Specify Simulink Model File
 simu.mode = 'normal';                   % Specify Simulation Mode ('normal','accelerator','rapid-accelerator')
 simu.explorer = 'off';                   % Turn SimMechanics Explorer (on/off)
 simu.startTime = 0;                     % Simulation Start Time [s]
-simu.rampTime = 0;                    % Wave Ramp Time [s]
-simu.endTime = 160;                     % Simulation End Time [s]        
-simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
+simu.rampTime = 8;                    % Wave Ramp Time [s]
+simu.endTime = 40;                     % Simulation End Time [s]        
+simu.solver = 'ode4';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
 simu.dt = 1e-3;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
-% simu.mcrMatFile = 'mcr.mat';
+simu.mcrMatFile = 'mcr.mat';
 % simu.mcrMatFile = 'pressure_mcr.mat';
 
 %% Wave Information
@@ -24,6 +24,7 @@ simu.cicEndTime = 30;                   % Specify CI Time [s]
 % Irregular Waves using PM Spectrum with Directionality 
 waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
 waves.height = 2.5;                     % Significant Wave Height [m]
+waves.period = 20;                       % Peak Period [s]
 waves.period = 8;                       % Peak Period [s]
 waves.spectrumType = 'PM';              % Specify Spectrum Type
 waves.phaseSeed = 1;
