@@ -6,11 +6,11 @@ simu.explorer = 'off';                   % Turn SimMechanics Explorer (on/off)
 simu.startTime = 0;                     % Simulation Start Time [s]
 simu.rampTime = 8;                    % Wave Ramp Time [s]
 simu.endTime = 40;                     % Simulation End Time [s]        
-simu.solver = 'ode4';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
+simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
 simu.dt = 1e-3;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
-simu.mcrMatFile = 'mcr.mat';
-% simu.mcrMatFile = 'pressure_mcr.mat';
+% simu.mcrMatFile = 'mcr.mat';
+simu.mcrMatFile = 'pressure_mcr.mat';
 
 %% Wave Information
 % % noWaveCIC, no waves with radiation CIC  
@@ -23,9 +23,9 @@ simu.mcrMatFile = 'mcr.mat';
 
 % Irregular Waves using PM Spectrum with Directionality 
 waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
-waves.height = 2.5;                     % Significant Wave Height [m]
-waves.period = 20;                       % Peak Period [s]
-waves.period = 8;                       % Peak Period [s]
+waves.height = 5.2;                     % Significant Wave Height [m]
+% waves.period = 8; waves.height = 5.2; % wave height determined to set wave power to 100 kW
+waves.period = 20; waves.height = 4.2;  % wave height determined to set wave power to 100 kW
 waves.spectrumType = 'PM';              % Specify Spectrum Type
 waves.phaseSeed = 1;
 % waves.direction = [0,30,90];            % Wave Directionality [deg]
@@ -64,10 +64,12 @@ pto(1).stiffness = 0;                           % PTO Stiffness Coeff [Nm/rad]
 pto(1).damping = 0;%12000;                         % PTO Damping Coeff [Nsm/rad]
 pto(1).location = [0 0 -8.9];                   % PTO Location [m]
 
+%% load PTO parameters
+params = Parameters();
+
 %% Rotary to Linear Adjustable Rod
 crank_z = 3; % [m] Seems to be the vertical distance up the flap that the rod is connected to
-cylinderStroke = 3; % [m] % stroke of the hydraulic cylinder
-initalCylinderLength = 1.5*cylinderStroke;
+initalCylinderLength = 1.5*params.cylinderStroke;
 crank_x = sqrt(initalCylinderLength^2 - crank_z^2);
 % calculate the initial length of the cylinder
     % Fully retracted - the total length is about the stroke length
@@ -76,16 +78,18 @@ crank_x = sqrt(initalCylinderLength^2 - crank_z^2);
 ptoSim(1) = ptoSimClass('adjustableRod');
 ptoSim(1).adjustableRod.crank = crank_z;
 ptoSim(1).adjustableRod.offset = 0;
-ptoSim(1).adjustableRod.rodInit = 1.5*cylinderStroke; % [m] Initial length of the cylinder;
+ptoSim(1).adjustableRod.rodInit = 1.5*params.cylinderStroke; % [m] Initial length of the cylinder;
 ptoSim(1).adjustableRod.initalCylinderLength = initalCylinderLength;
 
-%% load PTO parameters
-Parameters
 
-PTO = 'Active Valving';
-% PTO = 'Continuous PI';
-% PTO = 'Discrete PI';
-% PTO = 'EHA';
-% PTO = 'HHEA';
-% PTO = 'Passive Valving';
-% PTO = 'Rectifying';
+% Simple force lows
+    % PTO = 'Continuous PI';
+    % PTO = 'Discrete PI';
+    PTO = 'Rectifying';
+
+% Hydraulic PTO models
+    % PTO = 'Active Valving';
+    % PTO = 'EHA';
+    % PTO = 'HHEA';
+    % PTO = 'Passive Valving';
+

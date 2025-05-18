@@ -3,6 +3,7 @@
 *.log
 *.slxc
 *.slx.*
+*.png
 
 **/temp/
 **/slprj/

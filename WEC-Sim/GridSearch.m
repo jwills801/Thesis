@@ -28,7 +28,7 @@ KiMatrix(I)
 
 
 %% Loop rectifying pressure
-pressureVals = linspace(4,10,5)*1e6;
+pressureVals = linspace(6,9,11)*1e6;
 
 mcr = struct();
 mcr.header = {'pressure'};
@@ -39,9 +39,18 @@ EnergyVector = NaN(size(mcr.cases,1),1);
 
 wecSimMCR
 
-% Analyze results
+%% Analyze results
 
-figure, plot(pressureVals/1e6,-EnergyVector/1e6), xlabel('Pressure [MPa]'), ylabel('MJ')
+figure, plot(pressureVals/1e6,-EnergyVector/1e6/40), xlabel('Pressure [MPa]'), ylabel('Average Mechanical Power [MW]'),grid 
+fig = gcf; set(fig,'Color', 'white');
+ax = findobj(fig, 'Type', 'axes'); set(ax,'FontSize', 12,'LineWidth', 2,'FontWeight', 'bold');                 % Box around axes
+lines = findobj(ax, 'Type', 'line'); set(lines, 'LineWidth', 3);
+exportgraphics(fig,'figures/checkValve/gridSearchCloseToResonance.pdf','ContentType', 'vector','Resolution', 600);
+exportgraphics(fig,'figures/checkValve/gridSearchCloseToResonance.png','Resolution', 600);
+savefig('figures/checkValve/gridSearchCloseToResonance.fig');
+
+
+
 
 [~,I] = min(EnergyVector);
 pressureVals(I)/1e6
