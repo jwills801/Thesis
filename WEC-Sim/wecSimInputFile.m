@@ -1,3 +1,16 @@
+% peakWavePeriod = 8;
+% Simple force laws
+    % PTO = 'Continuous PI';
+    % PTO = 'Discrete PI';
+    % PTO = 'Rectifying';
+
+% Hydraulic PTO models
+    % PTO = 'Active Valving';
+    % PTO = 'EHA';
+    % PTO = 'HHEA';
+    % PTO = 'Passive Valving';
+
+
 %% Simulation Data
 simu = simulationClass();               % Initialize Simulation Class
 simu.simMechanicsFile = 'Flap.slx';    % Specify Simulink Model File
@@ -7,10 +20,10 @@ simu.startTime = 0;                     % Simulation Start Time [s]
 simu.rampTime = 8;                    % Wave Ramp Time [s]
 simu.endTime = 40;                     % Simulation End Time [s]        
 simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
-simu.dt = 1e-3;                          % Simulation Time-Step [s]
+simu.dt = 1e-2;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
-% simu.mcrMatFile = 'mcr.mat';
-simu.mcrMatFile = 'pressure_mcr.mat';
+simu.mcrMatFile = 'gains_mcr.mat';
+% simu.mcrMatFile = 'pressure_mcr.mat';
 
 %% Wave Information
 % % noWaveCIC, no waves with radiation CIC  
@@ -23,9 +36,11 @@ simu.mcrMatFile = 'pressure_mcr.mat';
 
 % Irregular Waves using PM Spectrum with Directionality 
 waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
-waves.height = 5.2;                     % Significant Wave Height [m]
-% waves.period = 8; waves.height = 5.2; % wave height determined to set wave power to 100 kW
-waves.period = 20; waves.height = 4.2;  % wave height determined to set wave power to 100 kW
+if peakWavePeriod == 8  % wave height determined to set wave power to 100 kW
+    waves.period = 8; waves.height = 5.2;
+elseif peakWavePeriod == 20
+    waves.period = 20; waves.height = 4.2;
+end
 waves.spectrumType = 'PM';              % Specify Spectrum Type
 waves.phaseSeed = 1;
 % waves.direction = [0,30,90];            % Wave Directionality [deg]
@@ -82,14 +97,17 @@ ptoSim(1).adjustableRod.rodInit = 1.5*params.cylinderStroke; % [m] Initial lengt
 ptoSim(1).adjustableRod.initalCylinderLength = initalCylinderLength;
 
 
-% Simple force lows
-    % PTO = 'Continuous PI';
-    % PTO = 'Discrete PI';
-    PTO = 'Rectifying';
 
-% Hydraulic PTO models
-    % PTO = 'Active Valving';
-    % PTO = 'EHA';
-    % PTO = 'HHEA';
-    % PTO = 'Passive Valving';
+
+% Close to resonance
+Kp = 4e6; Ki = -1e6;
+% pressure = 7.5e6;
+
+% far from resonance
+
+% To Do
+    % Get grid searches far from resonance
+    % Get EHA grid searches
+    % Set up all models to save rail power
+
 

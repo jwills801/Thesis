@@ -1,5 +1,5 @@
 mechanicalEnergy = logsout.getElement('Energy').Values.Data;
-
+% EHA_losses;
 switch PTO
     case 'Passive Valving'
         % note that pressure is not optimized for these wave conditions yet

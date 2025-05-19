@@ -3,7 +3,8 @@
 %% Define Force and velocity from WEC-sim
 force = logsout.getElement('force').Values.Data;
 velocity = logsout.getElement('velocity').Values.Data;
-electricPower = logsout.getElement('electricPower').Values.Data;
+% electricPower = logsout.getElement('electricPower').Values.Data;
+electricPower = zeros(size(time));
 t = logsout.getElement('velocity').Values.Time;
 dt = t(2) - t(1);
 

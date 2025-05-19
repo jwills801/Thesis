@@ -17,8 +17,12 @@ params.valveConstant = maxFlow/sqrt(acceptablePressureDrop);
 
 
 %% For active only
-% Kp = 7.7426e+06; Ki = 7.7426e+06; % T8 H2.5
-params.Kp = 2.1544e6; params.Ki = 1; % T20 H2.5
+% Control gains
+    % Simple PTO blocks just use Kp and Ki - not in the params structure - because it makes the mcr easier.
+    % Kp = 7.7426e+06; Ki = 7.7426e+06; % T8 H2.5
+    % params.Kp = 2.1544e6; params.Ki = 1; % T20 H2.5
+    params.Kp = 4e6; params.Ki = -1e6; % T20 H4.2
+
 valveSettlingTime = .1; % [s]
 valveTransferFunction = tf(4/valveSettlingTime,[1 4/valveSettlingTime]);
 params.valveNumerator = valveTransferFunction.Numerator{1};
@@ -26,7 +30,6 @@ params.valveDenominator = valveTransferFunction.Denominator{1};
 
 
 %% For passive only
-params.pressure = 10e6;
 params.pressure = 7.5e6; % From grid search close to resonance
 params.checkValveCrackingPressure = 1e5;
 params.checkValveStroke = .0254; % 1 in stroke
