@@ -1,9 +1,15 @@
+% Currently configured for debugging F=Ma
+    % No PTO force, no waves, just an initial condition.
+
 peakWavePeriod = 20;
 codesign = 0;
 % Simple force laws
     % PTO = 'Continuous PI'; Kp = 4e6; Ki = 3e6;
-    PTO = 'Discrete PI'; Kp = 4e6; Ki = 3e6;
+    % PTO = 'Discrete PI'; Kp = 4e6; Ki = 3e6;
     % PTO = 'Rectifying'; % pressure = 5e6;
+
+    % Turn off PTO force for debugging
+    PTO = 'Continuous PI'; Kp = 0; Ki = 0;
 
     Kp = 5e5; Ki = -1e5;
 
