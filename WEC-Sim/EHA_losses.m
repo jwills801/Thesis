@@ -109,6 +109,7 @@ EHA_Pump_size = D*Scale;
 
 Work_In = sum(P_in)*dt;
 Work_Out = sum(P_out)*dt;
+return
 e = Work_Out/Work_In;
 
 

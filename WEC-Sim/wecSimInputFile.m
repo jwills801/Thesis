@@ -1,12 +1,15 @@
-% peakWavePeriod = 8;
+peakWavePeriod = 20;
+codesign = 0;
 % Simple force laws
-    % PTO = 'Continuous PI';
-    % PTO = 'Discrete PI';
-    % PTO = 'Rectifying';
+    % PTO = 'Continuous PI'; Kp = 4e6; Ki = 3e6;
+    PTO = 'Discrete PI'; Kp = 4e6; Ki = 3e6;
+    % PTO = 'Rectifying'; % pressure = 5e6;
+
+    Kp = 5e5; Ki = -1e5;
 
 % Hydraulic PTO models
     % PTO = 'Active Valving';
-    % PTO = 'EHA';
+    % PTO = 'EHA'; codesign = 1;
     % PTO = 'HHEA';
     % PTO = 'Passive Valving';
 
@@ -17,17 +20,19 @@ simu.simMechanicsFile = 'Flap.slx';    % Specify Simulink Model File
 simu.mode = 'normal';                   % Specify Simulation Mode ('normal','accelerator','rapid-accelerator')
 simu.explorer = 'off';                   % Turn SimMechanics Explorer (on/off)
 simu.startTime = 0;                     % Simulation Start Time [s]
-simu.rampTime = 8;                    % Wave Ramp Time [s]
-simu.endTime = 40;                     % Simulation End Time [s]        
-simu.solver = 'ode45';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
-simu.dt = 1e-2;                          % Simulation Time-Step [s]
+simu.rampTime = peakWavePeriod;                    % Wave Ramp Time [s]
+simu.endTime = peakWavePeriod*20;                     % Simulation End Time [s]        
+simu.solver = 'ode45';
+simu.dt = 1e-1;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
-simu.mcrMatFile = 'gains_mcr.mat';
+% simu.mcrMatFile = 'gains_mcr.mat';
 % simu.mcrMatFile = 'pressure_mcr.mat';
+% simu.mcrMatFile = 'PTO_wave_mcr.mat';
+
 
 %% Wave Information
 % % noWaveCIC, no waves with radiation CIC  
-% waves = waveClass('noWaveCIC');       % Initialize Wave Class and Specify Type  
+waves = waveClass('noWaveCIC');       % Initialize Wave Class and Specify Type  
 
 % % Regular Waves 
 % waves = waveClass('regular');           % Initialize Wave Class and Specify Type                                 
@@ -35,11 +40,11 @@ simu.mcrMatFile = 'gains_mcr.mat';
 % waves.period = 8;                       % Wave Period [s]
 
 % Irregular Waves using PM Spectrum with Directionality 
-waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
-if peakWavePeriod == 8  % wave height determined to set wave power to 100 kW
-    waves.period = 8; waves.height = 5.2;
+% waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
+if peakWavePeriod == 8  % wave height determined to set available wave power to 100kW (18*waves.power)
+    waves.period = 8; waves.height = 1.22;
 elseif peakWavePeriod == 20
-    waves.period = 20; waves.height = 4.2;
+    waves.period = 20; waves.height = 0.99;
 end
 waves.spectrumType = 'PM';              % Specify Spectrum Type
 waves.phaseSeed = 1;
@@ -61,6 +66,7 @@ body(1) = bodyClass('hydroData/oswec.h5');      % Initialize bodyClass for Flap
 body(1).geometryFile = 'geometry/flap.stl';     % Geometry File
 body(1).mass = 127000;                          % User-Defined mass [kg]
 body(1).inertia = [1.85e6 1.85e6 1.85e6];       % Moment of Inertia [kg-m^2]
+body(1).initial.angle = .5;
 
 % Base
 body(2) = bodyClass('hydroData/oswec.h5');      % Initialize bodyClass for Base
@@ -97,17 +103,92 @@ ptoSim(1).adjustableRod.rodInit = 1.5*params.cylinderStroke; % [m] Initial lengt
 ptoSim(1).adjustableRod.initalCylinderLength = initalCylinderLength;
 
 
+%% Parameters specific to case
+params = UniqueParameters(PTO,peakWavePeriod,codesign,params);
 
+function out = UniqueParameters(PTO,period,codesign,params)
+% codesign only impacts the EHA PTO. It is ignored otherwise
+
+% update params to reflect this specific case
+out = params;
 
 % Close to resonance
-Kp = 4e6; Ki = -1e6;
-% pressure = 7.5e6;
+    closeToResonance = struct();
+    % "Mechanical gains" reflect gains chosen by lookng at mechanicalenergy
+        closeToResonance.mechGains.Kp = 5e5;
+        closeToResonance.mechGains.Ki = -1e5;
+    % "Electrical gains" reflect gains chosen by lookng at electricalenergy
+        closeToResonance.elecGains.Kp = 6e6;
+        closeToResonance.elecGains.Ki = 0;
+    % Optimal pressure for Passive Valving PTO
+        closeToResonance.rectifyingPressure = 5e6;
 
-% far from resonance
+% Far from resonance
+    farFromResonance = struct();
+    % "Mechanical gains" reflect gains chosen by lookng at mechanicalenergy
+        farFromResonance.mechGains.Kp = 4e6;
+        farFromResonance.mechGains.Ki = 3e6;
+    % "Electrical gains" reflect gains chosen by lookng at electricalenergy
+        farFromResonance.elecGains.Kp = 3e6;
+        farFromResonance.elecGains.Ki = 1e6;
+    % Optimal pressure for Passive Valving PTO
+        farFromResonance.rectifyingPressure = 16e6;
 
-% To Do
-    % Get grid searches far from resonance
-    % Get EHA grid searches
-    % Set up all models to save rail power
+% Put these parameters into the params structure depending on the PTO chosen 
+switch PTO
+    case {'Active Valving', 'HHEA'}
+        if period == 8
+            out.Kp = farFromResonance.mechGains.Kp;
+            out.Ki = farFromResonance.mechGains.Ki;
+        elseif period == 20
+            out.Kp = closeToResonance.mechGains.Kp;
+            out.Ki = closeToResonance.mechGains.Ki;
+        else
+            disp('Gains not defined for this case')
+            return
+        end
+    case 'EHA'
+        if codesign
+            if period == 8
+                out.Kp = farFromResonance.elecGains.Kp;
+                out.Ki = farFromResonance.elecGains.Ki;
+            elseif period == 20
+                out.Kp = closeToResonance.elecGains.Kp;
+                out.Ki = closeToResonance.elecGains.Ki;
+            else
+                disp('Gains not defined for this case')
+                return
+            end
+        else
+            if period == 8
+                out.Kp = farFromResonance.mechGains.Kp;
+                out.Ki = farFromResonance.mechGains.Ki;
+            elseif period == 20
+                out.Kp = closeToResonance.mechGains.Kp;
+                out.Ki = closeToResonance.mechGains.Ki;
+            else
+                disp('Gains not defined for this case')
+                return
+            end
+        end % if codesign
+    case 'Passive Valving'
+        if period == 8
+            out.pressure = farFromResonance.rectifyingPressure;
+        elseif period == 20
+            out.pressure = closeToResonance.rectifyingPressure;
+        else
+            disp('Gains not defined for this case')
+            return
+        end
+    otherwise
+        disp('PTO not defined')
+        return
+end % switch PTO
+        
+end % function
 
+%% To do
+    % Is this an okay wave condition? 100kW waves
+    % Is the cylinder areas set okay so the pressure is reasonable?
 
+    % Redo all the grid searches

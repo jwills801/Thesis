@@ -1,2 +1,4 @@
 EnergyVector(imcr) = Energy;
-ElectricEnergyVector(imcr) = Work_out(end);
+% EHA_losses;
+% ElectricEnergyVector(imcr) = Work_Out;
+outEnergyVector(imcr) = outputEnergy;

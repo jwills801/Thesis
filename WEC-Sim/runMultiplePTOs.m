@@ -1,34 +1,35 @@
+% Run all PTO cases
+% PTO_wave_mcr.mat
+% simu.dt = 1e-3;
+% Uncomment peakWavePeriod, codesign, and PTO
+
 clear, close all
-PTO_options = {'Active Valving', 'EHA', 'HHEA', 'Passive Valving'};
+PTO_options = {'Active Valving', 'HHEA', 'Passive Valving','EHA'};
 peakWavePeriod_options = [8, 20]; 
-peakWavePeriod_options = [20]; 
+codesign_options = 0;
 
 % Create combinations (4 PTOs × 2 periods = 8 cases)
 [PTO_grid, period_grid] = meshgrid(PTO_options, peakWavePeriod_options);
-combinations = [PTO_grid(:), num2cell(period_grid(:))];  % Convert to cell array
+combinations = [PTO_grid(:), num2cell(period_grid(:)),num2cell(zeros(size(PTO_grid(:))))];  % Convert to cell array
 
-% Build the mcr struct
-mcr = struct();
-mcr.header = {'PTO', 'peakWavePeriod'};  % Column names
+% Add EHA cases with codesign = 1
+eha_idx = strcmp(PTO_grid(:), 'EHA');
+eha_cases = [PTO_grid(eha_idx), num2cell(period_grid(eha_idx)), num2cell(ones(sum(eha_idx), 1))];
+combinations = [combinations; eha_cases];
+
+mcr.header = {'PTO', 'peakWavePeriod','codesign'};  % Column names
 mcr.cases = combinations;  % Each row is a test case
-
-% Save to .mat file
 save('PTO_wave_mcr.mat', 'mcr');
 
 EnergyVector = NaN(size(mcr.cases,1),1);
+outEnergyVector = NaN(size(mcr.cases,1),1);
 
-wecSimMCR
-
-% Analyze results
-
-figure, plot(pressureVals/1e6,-EnergyVector/1e6/40), xlabel('Pressure [MPa]'), ylabel('Average Mechanical Power [MW]'),grid 
-fig = gcf; set(fig,'Color', 'white');
-ax = findobj(fig, 'Type', 'axes'); set(ax,'FontSize', 12,'LineWidth', 2,'FontWeight', 'bold');                 % Box around axes
-lines = findobj(ax, 'Type', 'line'); set(lines, 'LineWidth', 3);
-exportgraphics(fig,'figures/checkValve/gridSearchCloseToResonance.pdf','ContentType', 'vector','Resolution', 600);
-exportgraphics(fig,'figures/checkValve/gridSearchCloseToResonance.png','Resolution', 600);
-savefig('figures/checkValve/gridSearchCloseToResonance.fig');
-
-[~,I] = min(EnergyVector);
-pressureVals(I)/1e6
--EnergyVector(I)/1e6
+%% run all cases
+for imcr = 1:length(mcr.cases)
+    for variableNameInd = 1:length(mcr.header)
+        eval([mcr.header{variableNameInd} ,'= mcr.cases{imcr,variableNameInd}'])
+    end
+    wecSim
+    EnergyVector(imcr) = Energy;
+    outEnergyVector(imcr) = outputEnergy;
+end

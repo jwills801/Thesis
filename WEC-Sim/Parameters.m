@@ -1,14 +1,10 @@
 function params = Parameters(~)
 %% For all PTOS
 params = struct();
-params.capArea = (50*.025)^2/4;
-     % This is a four foot diameter bore. That's huge.
-     % This could be split up into multiple actuators,
-     % And/or we could lower the connection point to the flap
+params.capArea = pi*(12*.025)^2/4; % 1 foot diameter bore cylinders
 params.rodArea = params.capArea/1.5;
-params.cylinderStroke = 3;
+params.cylinderStroke = 6;
 params.beta = 1.8e9;
-params.hoseVolume = params.capArea*5; % [m^3] 5 meters of hose the same diameter as the cap - possibly not used
 
 maxActuatorSpeed = 1; % [m/s]
 maxFlow = maxActuatorSpeed*params.capArea;
@@ -21,7 +17,7 @@ params.valveConstant = maxFlow/sqrt(acceptablePressureDrop);
     % Simple PTO blocks just use Kp and Ki - not in the params structure - because it makes the mcr easier.
     % Kp = 7.7426e+06; Ki = 7.7426e+06; % T8 H2.5
     % params.Kp = 2.1544e6; params.Ki = 1; % T20 H2.5
-    params.Kp = 4e6; params.Ki = -1e6; % T20 H4.2
+
 
 valveSettlingTime = .1; % [s]
 valveTransferFunction = tf(4/valveSettlingTime,[1 4/valveSettlingTime]);
@@ -30,8 +26,8 @@ params.valveDenominator = valveTransferFunction.Denominator{1};
 
 
 %% For passive only
-params.pressure = 7.5e6; % From grid search close to resonance
-params.checkValveCrackingPressure = 1e5;
+% params.pressure = 7.5e6; % From grid search close to resonance
+params.checkValveCrackingPressure = 1e5/7;
 params.checkValveStroke = .0254; % 1 in stroke
 
 
