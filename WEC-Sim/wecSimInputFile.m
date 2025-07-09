@@ -24,7 +24,7 @@ codesign = 0;
 simu = simulationClass();               % Initialize Simulation Class
 simu.simMechanicsFile = 'Flap.slx';    % Specify Simulink Model File
 simu.mode = 'normal';                   % Specify Simulation Mode ('normal','accelerator','rapid-accelerator')
-simu.explorer = 'off';                   % Turn SimMechanics Explorer (on/off)
+simu.explorer = 'on';                   % Turn SimMechanics Explorer (on/off)
 simu.startTime = 0;                     % Simulation Start Time [s]
 simu.rampTime = peakWavePeriod;                    % Wave Ramp Time [s]
 simu.endTime = peakWavePeriod*20;                     % Simulation End Time [s]        
@@ -72,7 +72,7 @@ body(1) = bodyClass('hydroData/oswec.h5');      % Initialize bodyClass for Flap
 body(1).geometryFile = 'geometry/flap.stl';     % Geometry File
 body(1).mass = 127000;                          % User-Defined mass [kg]
 body(1).inertia = [1.85e6 1.85e6 1.85e6];       % Moment of Inertia [kg-m^2]
-body(1).initial.angle = .5;
+body(1).setInitDisp([0 0 5], [0 1 0 .5], [0 0 0]); % Sets the initial rotation in y about the hinge rotation
 
 % Base
 body(2) = bodyClass('hydroData/oswec.h5');      % Initialize bodyClass for Base

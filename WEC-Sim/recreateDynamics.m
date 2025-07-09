@@ -5,6 +5,7 @@
 % since acceleration is already known
 
 %%
+r = 5; % Distance from hinge to center of gravity
 time = output.bodies(1).time;
 
 position = output.bodies(1).position';
@@ -19,7 +20,7 @@ forceMorisonAndViscous = output.bodies(1).forceMorisonAndViscous';
 forceRadiationDamping= output.bodies(1).forceRadiationDamping';
 forceRestoring = output.bodies(1).forceRestoring';
 forceTotalCheck = forceExcitation - forceAddedMass - forceLinearDamping - forceMorisonAndViscous - forceRadiationDamping - forceRestoring;
-figure, plot(time,forceTotal-forceTotalCheck)
+% figure, plot(time,forceTotal-forceTotalCheck)
 
 %% Check Sum of Forces Equals Mass Time Acceleration
 forceConstraint = output.constraints(1).forceConstraint';
@@ -27,21 +28,30 @@ forcePTO = output.ptos(1).forceTotal';
 % figure, plot(time,forcePTO), ylabel('PTO force')
 
 M = [eye(3,3)*body(1).mass, zeros(3,3); zeros(3,3), diag(body(1).inertia)];
-% M = body(1).hydroForce.hf1.storage.fAddedMass*2+[eye(3,3)*body(1).mass, zeros(3,3); zeros(3,3), diag(body(1).inertia)];
+A = body(1).hydroData.hydro_coeffs.added_mass.inf_freq(:,1:6)*1e3;
+Y = sum(diag(body(1).hydroData.hydro_coeffs.added_mass.inf_freq(1:3,1:3)*1e3));
+dM = [ body(1).adjMassFactor*Y*eye(3), zeros(3,3); zeros(3,3), body(1).hydroData.hydro_coeffs.added_mass.inf_freq(4:6,4:6)*1e3];
+M_adjusted = M+dM;
+A_adjusted = A-dM; % Same as body(1).hydroForce.hf1.storage.hydroForce_fAddedMass
 
-massTimesAcceleration = M*acceleration;
+% massTimesAcceleration = M_adjusted*acceleration; 
+massTimesAcceleration = M*acceleration - forceAddedMass(5,:);
 
-% realforceTotal = forceTotal;
-realforceTotal = +forceTotal-forcePTO-forceConstraint;
-% realforceTotal = -forceAddedMass;
+% forceAddedMassCheck = A_adjusted*acceleration;
+forceAddedMassCheck = A*acceleration; % This one matches
+% figure, plot(time,forceAddedMass(5,:),time,forceAddedMassCheck(5,:))
 
+realforceTotal = forceTotal;
 
-i = 5; % look at just pitch for simplicity
-figure, plot(time,massTimesAcceleration(i,:),time,realforceTotal(i,:)),legend('m*a','sum of Forces'), grid
+netTorque = realforceTotal(5,:) + r*realforceTotal(1,:).*cos(position(5,:)) - r*realforceTotal(3,:).*sin(position(5,:));
 
-tmp = massTimesAcceleration - realforceTotal;
-figure, plot(time,tmp(i,:)), ylabel('m*a-real total force'), grid
+figure, plot(time,massTimesAcceleration(5,:),time,netTorque),legend('m*a','sum of Forces'), grid, xlabel('Time [s]'), ylabel('Torque [Nm]')
 
+torqueAddedMass = forceAddedMass(5,:) + r*forceAddedMass(1,:).*cos(position(5,:)) - r*forceAddedMass(3,:).*sin(position(5,:));
+% torqueAddedMass = forceAddedMass(5,:);
+figure, plot(time,massTimesAcceleration(5,:) - netTorque,time,5*r*forceAddedMass(3,:).*sin(position(5,:))), ylabel('m*a-real total force'), grid
+
+i = 5;
 figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
     legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
     ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
