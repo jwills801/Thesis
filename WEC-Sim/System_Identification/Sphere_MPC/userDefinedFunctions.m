@@ -85,3 +85,63 @@ xlabel('Time (s)')
 ylim([-(controller.modelPredictiveControl.maxPTOForceChange/1000 + 250), controller.modelPredictiveControl.maxPTOForceChange/1000 + 250])
 disp("Max PTO Force Change (kN/s):")
 disp(max(abs(gradient(controllersOutput.force(:,3))*(1/simu.dt)))/1000)
+
+%% Simulate the system using the system matrices to make sure it matches WEC-SIM results
+dt = time(2);
+dt_d = .5;
+sys_d = c2d(controller(1).plant.sys_c,dt_d,'zoh');
+time = output.bodies.time;
+zb = output.bodies.position(:,3)-body.centerGravity(3);
+
+Fe = output.bodies(1).forceExcitation(:,3);
+Fe_d = Fe(1:dt_d/dt:end);
+time_d = time(1:dt_d/dt:end);
+
+F_PTO = output.ptos(1).forceTotal(:,3);
+dF_PTO = [0;diff(F_PTO)]/time(2);
+dF_PTO_d = dF_PTO(1:dt_d/dt:end);
+
+X = NaN(length(time_d),length(sys_d.A));
+X(1,:) = zeros(1,length(sys_d.A));
+for i = 2:length(time_d)
+    X(i,:) = sys_d.A*X(i-1,:)' + sys_d.B*[dF_PTO_d(i-1);Fe_d(i-1)];
+end
+dzb_check = X(:,1);
+zb_check = X(:,2);
+F_PTO_check = X(:,9);
+
+figure
+subplot(311), plot(time_d,dzb_check,time,output.bodies.velocity(:,3))
+subplot(312), plot(time_d,zb_check,time,zb)
+subplot(313), plot(time_d,F_PTO_check,time,F_PTO)
+
+%% Simulate the continuous time system
+sys_c = controller(1).plant.sys_c;
+X = NaN(length(time),length(sys_c.A));
+X(1,:) = zeros(1,length(sys_c.A));
+dX = X;
+for i = 2:length(time)
+    dX(i,:) = sys_c.A*X(i-1,:)' + sys_c.B*[dF_PTO(i-1);Fe(i-1)];
+    X(i,:) = X(i-1,:)' + dX(i,:)'*dt;
+end
+dzb_check = X(:,1);
+zb_check = X(:,2);
+F_PTO_check = X(:,9);
+
+figure
+subplot(311), plot(time,dzb_check,time,output.bodies.velocity(:,3))
+subplot(312), plot(time,zb_check,time,zb)
+subplot(313), plot(time,F_PTO_check,time,F_PTO)
+
+%%
+acc = [0;diff(dzb_check)]/dt;
+figure, plot(time,acc,time,dX(:,1))
+
+%% Sum of Forces Equals Mass Times Acceleration
+Ma = (controller(1).bemData.m+controller(1).bemData.aInf)*dX(:,1);
+sumOfForces = output.bodies(1).forceTotal(:,3);
+sumOfForces = output.bodies(1).forceTotal(:,3) + F_PTO + output.bodies(1).forceAddedMass(:,3);
+figure, plot(time,Ma,time,sumOfForces)
+
+
+

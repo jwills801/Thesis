@@ -4,7 +4,7 @@
 % keep states, however, unlike some other methods.
 sys_d = c2d(controller(1).plant.sys_c,controller(1).modelPredictiveControl.dt,'zoh');
 [A_d,B_d,C_d,D_d] = ssdata(sys_d);
-A_dis = A_d;    
+A_dis = A_d;
 C_dis = C_d;
 
 Bu_dis = B_d(:,1);  % SS object has one B matrix w/ 2 columns. First = Bu, Second = Bv.
