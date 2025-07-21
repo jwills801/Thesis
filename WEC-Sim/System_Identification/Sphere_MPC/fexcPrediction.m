@@ -11,7 +11,8 @@ for h = 0:Ho                                    % Each loop builds a row to Hp+1
     %X(h+1,:) = fliplr(pastAndCurrentFe(end-h-prediction.order:end-h-1)'); % X Matrix: Ho-1 rows, prediction.order columns
 end
 
-alphas = regress(Y,X);
+% alphas = regress(Y,X);
+alphas = X\Y;
 
 % FE PREDICTION using single set of alpha values
 % Fe(k+1|k) = alpha1*Fe(k) + alpha2*Fe(K-1),
