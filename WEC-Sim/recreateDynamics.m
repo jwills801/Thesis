@@ -20,7 +20,7 @@ forceMorisonAndViscous = output.bodies(1).forceMorisonAndViscous';
 forceRadiationDamping= output.bodies(1).forceRadiationDamping';
 forceRestoring = output.bodies(1).forceRestoring';
 forceTotalCheck = forceExcitation - forceAddedMass - forceLinearDamping - forceMorisonAndViscous - forceRadiationDamping - forceRestoring;
-% figure, plot(time,forceTotal-forceTotalCheck)
+figure, plot(time,forceTotal-forceTotalCheck)
 
 %% Check Sum of Forces Equals Mass Time Acceleration
 forceConstraint = output.constraints(1).forceConstraint';
@@ -49,7 +49,8 @@ figure, plot(time,massTimesAcceleration(5,:),time,netTorque),legend('m*a','sum o
 
 torqueAddedMass = forceAddedMass(5,:) + r*forceAddedMass(1,:).*cos(position(5,:)) - r*forceAddedMass(3,:).*sin(position(5,:));
 % torqueAddedMass = forceAddedMass(5,:);
-figure, plot(time,massTimesAcceleration(5,:) - netTorque,time,5*r*forceAddedMass(3,:).*sin(position(5,:))), ylabel('m*a-real total force'), grid
+% figure, plot(time,massTimesAcceleration(5,:) - netTorque,time,5*r*forceAddedMass(3,:).*sin(position(5,:))), ylabel('m*a-real total force'), grid
+figure, plot(time,massTimesAcceleration(5,:) - netTorque), ylabel('m*a-real total force'), grid
 
 i = 5;
 figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
