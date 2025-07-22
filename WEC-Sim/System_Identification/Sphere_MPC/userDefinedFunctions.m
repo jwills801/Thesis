@@ -87,10 +87,10 @@ disp("Max PTO Force Change (kN/s):")
 disp(max(abs(gradient(controllersOutput.force(:,3))*(1/simu.dt)))/1000)
 
 %% Simulate the system using the system matrices to make sure it matches WEC-SIM results
+time = output.bodies.time;
 dt = time(2);
 dt_d = .5;
 sys_d = c2d(controller(1).plant.sys_c,dt_d,'zoh');
-time = output.bodies.time;
 zb = output.bodies.position(:,3)-body.centerGravity(3);
 
 Fe = output.bodies(1).forceExcitation(:,3);
@@ -139,9 +139,39 @@ figure, plot(time,acc,time,dX(:,1))
 
 %% Sum of Forces Equals Mass Times Acceleration
 Ma = (controller(1).bemData.m+controller(1).bemData.aInf)*dX(:,1);
-sumOfForces = output.bodies(1).forceTotal(:,3);
 sumOfForces = output.bodies(1).forceTotal(:,3) + F_PTO + output.bodies(1).forceAddedMass(:,3);
 figure, plot(time,Ma,time,sumOfForces)
+
+%%
+position = output.bodies(1).position';
+velocity = output.bodies(1).velocity';
+acceleration = output.bodies(1).acceleration';
+
+forceTotal = output.bodies(1).forceTotal';
+forceExcitation = output.bodies(1).forceExcitation';
+forceAddedMass = output.bodies(1).forceAddedMass';
+forceLinearDamping = output.bodies(1).forceLinearDamping';
+forceMorisonAndViscous = output.bodies(1).forceMorisonAndViscous';
+forceRadiationDamping= output.bodies(1).forceRadiationDamping';
+forceRestoring = output.bodies(1).forceRestoring';
+
+forceTotalCheck = forceExcitation - forceAddedMass - forceLinearDamping - forceMorisonAndViscous - forceRadiationDamping - forceRestoring;
+figure, plot(time,forceTotal-forceTotalCheck)
+
+M = [eye(3,3)*body(1).mass, zeros(3,3); zeros(3,3), diag(body(1).inertia)];
+A = body(1).hydroData.hydro_coeffs.added_mass.inf_freq*1e3;
+forceAddedMassCheck = A*acceleration;
+figure, plot(time,forceAddedMass-forceAddedMassCheck)
+
+% figure, plot(time,forceLinearDamping)
+% figure, plot(time,forceMorisonAndViscous)
+
+forceRadiationDampingCheck = -X(:,5)';
+figure, plot(time,forceRadiationDamping(3,:),time,forceRadiationDampingCheck)
+
+k = hydro.hydro_coeffs.linear_restoring_stiffness(3,3)*simu.rho*simu.gravity;
+forceRestoringCheck = k*(position(3,:) - body.centerGravity(3));
+figure, plot(time,forceRestoring(3,:),time,forceRestoringCheck)
 
 
 

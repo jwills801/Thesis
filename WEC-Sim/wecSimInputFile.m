@@ -34,6 +34,7 @@ simu.cicEndTime = 30;                   % Specify CI Time [s]
 % simu.mcrMatFile = 'gains_mcr.mat';
 % simu.mcrMatFile = 'pressure_mcr.mat';
 % simu.mcrMatFile = 'PTO_wave_mcr.mat';
+simu.stateSpace = 1;
 
 
 %% Wave Information

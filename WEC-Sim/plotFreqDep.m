@@ -1,10 +1,9 @@
-close all; clear all; clc;
-
+clear
 % Inputs (from wecSimInputFile)
 simu = simulationClass();
-body(1) = bodyClass('hydroData/sphere.h5');
-waves.height = 2.5;
-waves.period = 9.52;
+body(1) = bodyClass('hydroData/oswec.h5');
+waves.height = 1.22;
+waves.period = 20;
 
 % Load hydrodynamic data for float from BEM
 hydro = readBEMIOH5(body.h5File{1}, 1, body.meanDrift);

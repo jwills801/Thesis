@@ -9,6 +9,7 @@ simu.endTime = 400;                     % Simulation End Time [s]
 simu.solver = 'ode4';                   % simu.solver = 'ode4' for fixed step & simu.solver = 'ode45' for variable step 
 simu.cicEndTime = 10;
 simu.dt = 0.01; 							% Simulation time-step [s]
+simu.stateSpace = 1;
 
 %% Wave Information 
 
