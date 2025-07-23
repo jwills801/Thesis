@@ -1,10 +1,4 @@
-% The goal of this code to recreate the dynamics in WECSim with a State Space time
-% domain formulation. Step one is to ensure we can recreate the forces and
-% how they combine for F=Ma, which is not as simple in real time because of
-% added mass, but should be straight forward to check in post processing
-% since acceleration is already known
-
-%%
+% The goal of this code to recreate the dynamics in WECSim with a State Space time domain formulation
 r = 5; % Distance from hinge to center of gravity
 time = output.bodies(1).time;
 
@@ -28,31 +22,29 @@ forcePTO = output.ptos(1).forceTotal';
 % figure, plot(time,forcePTO), ylabel('PTO force')
 
 M = [eye(3,3)*body(1).mass, zeros(3,3); zeros(3,3), diag(body(1).inertia)];
-A = body(1).hydroData.hydro_coeffs.added_mass.inf_freq(:,1:6)*1e3;
-    % Y = sum(diag(body(1).hydroData.hydro_coeffs.added_mass.inf_freq(1:3,1:3)*1e3));
-    % dM = [ body(1).adjMassFactor*Y*eye(3), zeros(3,3); zeros(3,3), body(1).hydroData.hydro_coeffs.added_mass.inf_freq(4:6,4:6)*1e3];
-    % M_adjusted = M+dM;
-    % A_adjusted = A-dM; % Same as body(1).hydroForce.hf1.storage.hydroForce_fAddedMass
+A = body(1).hydroData.hydro_coeffs.added_mass.inf_freq(:,1:6)*simu.rho;
 
-massTimesAcceleration = (M)*acceleration;
-figure, plot(time,massTimesAcceleration), grid, legend
+massTimesAcceleration = (M+A)*acceleration;
+accelerationTorque = massTimesAcceleration(5,:)  + r*massTimesAcceleration(1,:).*cos(position(5,:)) - r*massTimesAcceleration(3,:).*sin(position(5,:));
+    % Linearized version - found in symbolicLinearizaton.m: theta_ddot*(I_55 + I_51*r + r*(I_15 + I_11*r))
+    I = M+A;
+    accelerationTorqueLinearized = ( I(5,5) + r*(I(5,1) + I(1,5) + r*I(1,1)) )*acceleration(5,:);
+figure, plot(time,accelerationTorque,time,accelerationTorqueLinearized)
 %%
-sumOfForces = forceTotal + forcePTO;
-
+sumOfForces = forceTotal + forceAddedMass;
 netTorque = sumOfForces(5,:)  + r*sumOfForces(1,:).*cos(position(5,:)) - r*sumOfForces(3,:).*sin(position(5,:));
-AccelerationTorque = massTimesAcceleration(5,:)  + r*massTimesAcceleration(1,:).*cos(position(5,:)) - r*massTimesAcceleration(3,:).*sin(position(5,:));
-figure, plot(time,massTimesAcceleration(5,:),time,netTorque),legend('m*a','sum of Forces'), grid, xlabel('Time [s]'), ylabel('Torque [Nm]')
-figure, plot(time,AccelerationTorque,time,netTorque),legend('m*a','sum of Forces'), grid, xlabel('Time [s]'), ylabel('Torque [Nm]')
 
-figure, plot(time,massTimesAcceleration(5,:) - netTorque), ylabel('m*a-real total force'), grid
+figure, plot(time,accelerationTorque,time,netTorque),legend('m*a','sum of Forces'), grid, xlabel('Time [s]'), ylabel('Torque [Nm]')
 
-i = 5;
-figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
-    legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
-    ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
+% figure, plot(time,accelerationTorque - netTorque), ylabel('m*a-real total force'), grid
+
+% i = 5;
+% figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
+%     legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
+%     ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
 
 %% Check added mass:
-forceAddedMassCheck = 1e3*body(1).hydroData.hydro_coeffs.added_mass.inf_freq(:,1:6)*acceleration;
+forceAddedMassCheck = A*acceleration;
 figure, plot(time,forceAddedMass(5,:),time,forceAddedMassCheck(5,:))
 xlabel('Time'), ylabel('Added Mass [Nm]'), legend('WEC-Sim','My Check'), grid
 
@@ -101,10 +93,15 @@ figure, plot(time,forceRadiationDamping-forceRadiationDampingCheck'), ylabel('Da
 
 
 %% Check Restoring Force
-forceRestoringCheck = 1e4*body(1).hydroData.hydro_coeffs.linear_restoring_stiffness*position + [simu.rho*simu.gravity*body(1).volume*(body(1).centerBuoyancy-body(1).centerGravity); zeros(3,1)];
-figure, plot(time,forceRestoring),ylabel('Restoring'), legend
-figure, plot(time,forceRestoringCheck), ylabel('Check Resoring')
-figure, plot(time,forceRestoring - forceRestoringCheck), ylabel('Resoring Difference')
+forceRestoringCheck = body(1).hydroForce.hf1.linearHydroRestCoef*(position-[body(1).centerGravity;0;0;0]) + ...
+    [zeros(2,1);simu.gravity*body(1).mass-simu.rho*simu.gravity*body(1).volume;zeros(3,1)];
+figure, plot(time,forceRestoring - forceRestoringCheck), ylabel('Restoring Difference')
+
+K = body(1).hydroForce.hf1.linearHydroRestCoef;
+torqueRestoring = K(5,5)*position(5,:) - r*sin(position(5,:)).*(K(3,3)*(r*cos(position(5,:))-r)+simu.gravity*(body(1).mass-simu.rho*body(1).volume));
+torqueRestoringLinearized = (K(5,5) - r*simu.gravity*(body(1).mass-simu.rho*body(1).volume))*position(5,:);
+figure, plot(time,torqueRestoring,time,torqueRestoringLinearized)
+
 
 %% Full state space estimation of dynamics
 a = squeeze(body(1).hydroData.hydro_coeffs.added_mass.all(5,5,:)).*simu.rho;
