@@ -36,12 +36,20 @@ netTorque = sumOfForces(5,:)  + r*sumOfForces(1,:).*cos(position(5,:)) - r*sumOf
 
 figure, plot(time,accelerationTorque,time,netTorque),legend('m*a','sum of Forces'), grid, xlabel('Time [s]'), ylabel('Torque [Nm]')
 
-% figure, plot(time,accelerationTorque - netTorque), ylabel('m*a-real total force'), grid
+figure, plot(time,accelerationTorque - netTorque), ylabel('m*a-real total force'), grid
 
-% i = 5;
-% figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
-%     legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
-%     ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
+i = 5;
+figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
+    legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
+    ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
+
+
+theta = position(5,:);
+figure, plot(time,getNetTorque(forceAddedMass,theta),time,getNetTorque(forceExcitation,theta),time,getNetTorque(forceLinearDamping,theta),time,getNetTorque(forceMorisonAndViscous,theta),time,getNetTorque(forceRadiationDamping,theta),time,getNetTorque(forceRestoring,theta),time,getNetTorque(forcePTO,theta),time,getNetTorque(forceConstraint,theta))
+    legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
+    ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
+
+figure, plot(time,forceInertia(5,:),time,sumOfForces(5,:))
 
 %% Check added mass:
 forceAddedMassCheck = A*acceleration;
@@ -157,9 +165,10 @@ subplot(313), plot(time,F_PTO_check,time,forcePTO(5,:))
 
 
 
-
-
-
+function torque = getNetTorque(forces,theta)
+r = 5;
+    torque = forces(5,:)  + r*forces(1,:).*cos(theta) - r*forces(3,:).*sin(theta);
+end
 
 
 
