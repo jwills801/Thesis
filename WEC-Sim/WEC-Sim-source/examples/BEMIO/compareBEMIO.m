@@ -177,7 +177,7 @@ WAMIT_hydro.plotDofs =  [5, 5; 1, 5]; % Plot pitch (5,5) and surge-pitch (1,5) d
 
 % Plot each hydro data parameter
 % plotAddedMass(WAMIT_hydro,CAP_hydro)
-% plotRadiationDamping(WAMIT_hydro,CAP_hydro)
+plotRadiationDamping(WAMIT_hydro,CAP_hydro)
 % plotRadiationIRF(WAMIT_hydro,CAP_hydro)
 % plotExcitationMagnitude(WAMIT_hydro,CAP_hydro)
 % plotExcitationPhase(WAMIT_hydro,CAP_hydro)
