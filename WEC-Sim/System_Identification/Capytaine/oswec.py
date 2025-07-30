@@ -12,8 +12,9 @@ import numpy as np
 import sys
 
 # Add directory with the call_capytaine.py file to the system path.
-currentdir = os.path.dirname(os.getcwd())
-sys.path.append(currentdir)
+# currentdir = os.path.dirname(os.getcwd())
+print(os.getcwd())
+sys.path.append(os.getcwd())
 import call_capytaine as cc
 
 # Define OSWEC parameters ----------------------------------------------------#
@@ -24,11 +25,11 @@ bem_cg = ((0,0,-3.90),
 bem_name = ('oswec_flap',
             'oswec_base')                                       # body names
 
-bem_w = np.linspace(0.04, 20.0, 500)                            # wave frequencies
-bem_headings = np.linspace(0,np.pi/2,10)                        # wave headings
+bem_w = np.linspace(0.04, 20.0, 5)                            # wave frequencies
+bem_headings = np.linspace(0,np.pi/2,1)                        # wave headings
 bem_depth = 10.90                                               # water depth
 
-bem_ncFile = os.getcwd() + os.path.sep + 'oswec.nc'             # path for output .nc file
+bem_ncFile = os.getcwd() + os.path.sep + 'oswec_new.nc'             # path for output .nc file
 # ----------------------------------------------------------------------------#
 
 # Run Capytaine
