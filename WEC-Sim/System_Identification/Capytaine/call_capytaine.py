@@ -332,13 +332,26 @@ def capy_solver(wCapy, CoG, headings,ncFName,wDes, body_name, depth, density,
     
     solver = cpt.BEMSolver()
     capyData = solver.fill_dataset(problems, [combo], hydrostatics=False)
+    print(capyData.keys())
+
+    # B = capyData['radiation_damping'].sel(omega=wCapy[1])
+    # print(B)
+    # for i in np.linspace(0,5,6,dtype=int):
+    #     print(i+1)
+    #     print(B[i,i].values)
+    #     print('______')
     
+    # print('Stop')
     # # add kochin diffraction results
     # kochin = cpt.io.xarray.kochin_data_array(results, headings)
     # capyData.update(kochin)
 
     # save to .nc file
-    cpt.io.xarray.separate_complex_values(capyData).to_netcdf(ncFName, encoding={'radiating_dof': {'dtype': 'U'}, 'influenced_dof': {'dtype': 'U'}})
+    # cpt.io.xarray.separate_complex_values(capyData).to_netcdf(ncFName, encoding={'radiating_dof': {'dtype': 'U'}, 'influenced_dof': {'dtype': 'U'}})
+    data = cpt.io.xarray.separate_complex_values(capyData)
+    data["radiating_dof"] = data["radiating_dof"].astype(str)
+    data["influenced_dof"] = data["influenced_dof"].astype(str)
+    data.to_netcdf(ncFName)
 
     print('\nCapytaine call complete. Data saved to \n' + ncFName +'\n\n')
 
