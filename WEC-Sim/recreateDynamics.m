@@ -49,8 +49,6 @@ figure, plot(time,getNetTorque(forceAddedMass,theta),time,getNetTorque(forceExci
     legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
     ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
 
-figure, plot(time,forceInertia(5,:),time,sumOfForces(5,:))
-
 %% Check added mass:
 forceAddedMassCheck = A*acceleration;
 figure, plot(time,forceAddedMass(5,:),time,forceAddedMassCheck(5,:))
