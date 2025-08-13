@@ -31,15 +31,16 @@ simu.endTime = peakWavePeriod*20;                     % Simulation End Time [s]
 simu.solver = 'ode45';
 simu.dt = 1e-1;                          % Simulation Time-Step [s]
 simu.cicEndTime = 30;                   % Specify CI Time [s]
+simu.cicDt = 1e-2;
 % simu.mcrMatFile = 'gains_mcr.mat';
 % simu.mcrMatFile = 'pressure_mcr.mat';
 % simu.mcrMatFile = 'PTO_wave_mcr.mat';
-simu.stateSpace = 1;
+% simu.stateSpace = 1;
 
 
 %% Wave Information
 % % noWaveCIC, no waves with radiation CIC  
-waves = waveClass('noWaveCIC');       % Initialize Wave Class and Specify Type  
+% waves = waveClass('noWaveCIC');       % Initialize Wave Class and Specify Type  
 
 % % Regular Waves 
 % waves = waveClass('regular');           % Initialize Wave Class and Specify Type                                 
@@ -47,7 +48,7 @@ waves = waveClass('noWaveCIC');       % Initialize Wave Class and Specify Type
 % waves.period = 8;                       % Wave Period [s]
 
 % Irregular Waves using PM Spectrum with Directionality 
-% waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
+waves = waveClass('irregular');         % Initialize Wave Class and Specify Type
 if peakWavePeriod == 8  % wave height determined to set available wave power to 100kW (18*waves.power)
     waves.period = 8; waves.height = 1.22;
 elseif peakWavePeriod == 20
@@ -73,7 +74,7 @@ body(1) = bodyClass('hydroData/oswec.h5');      % Initialize bodyClass for Flap
 body(1).geometryFile = 'geometry/flap.stl';     % Geometry File
 body(1).mass = 127000;                          % User-Defined mass [kg]
 body(1).inertia = [1.85e6 1.85e6 1.85e6];       % Moment of Inertia [kg-m^2]
-body(1).setInitDisp([0 0 5], [0 1 0 .5], [0 0 0]); % Sets the initial rotation in y about the hinge rotation
+% body(1).setInitDisp([0 0 5], [0 1 0 .5], [0 0 0]); % Sets the initial rotation in y about the hinge rotation
 
 % Base
 body(2) = bodyClass('hydroData/oswec.h5');      % Initialize bodyClass for Base

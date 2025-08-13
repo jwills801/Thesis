@@ -338,7 +338,11 @@ def capy_solver(wCapy, CoG, headings,ncFName,wDes, body_name, depth, density,
     # capyData.update(kochin)
 
     # save to .nc file
-    cpt.io.xarray.separate_complex_values(capyData).to_netcdf(ncFName, encoding={'radiating_dof': {'dtype': 'U'}, 'influenced_dof': {'dtype': 'U'}})
+    # cpt.io.xarray.separate_complex_values(capyData).to_netcdf(ncFName, encoding={'radiating_dof': {'dtype': 'U'}, 'influenced_dof': {'dtype': 'U'}})
+    data = cpt.io.xarray.separate_complex_values(capyData)
+    data["radiating_dof"] = data["radiating_dof"].astype(str)
+    data["influenced_dof"] = data["influenced_dof"].astype(str)
+    data.to_netcdf(ncFName)
 
     print('\nCapytaine call complete. Data saved to \n' + ncFName +'\n\n')
 

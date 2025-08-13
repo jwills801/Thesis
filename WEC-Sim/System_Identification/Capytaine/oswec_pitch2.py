@@ -10,8 +10,9 @@ flap_file = os.getcwd() + os.path.sep + 'flap.dat'
 dof = cpt.rigid_body_dofs(rotation_center=(0, 0, -8.9))
 # dof = cpt.rigid_body_dofs()
 flap = cpt.FloatingBody(mesh=cpt.load_mesh(mesh = flap_file),
-                        dofs=cpt.rigid_body_dofs(),
+                        dofs=dof,
                         center_of_mass=(0,0,-3.9))
+# flap.add_rotation_dof(name='Pitch')
 flap.keep_immersed_part()
 
 # # define the base
@@ -24,6 +25,11 @@ flap.keep_immersed_part()
 
 anim = flap.animate(motion={"Pitch": 0.2}, loop_duration=1.0)
 # anim.run()
+# print(flap.dofs)
+print(list(flap.dofs))
+print(['Surge','Sway','Heave','Roll','Pitch','Yaw'])
+print(list(flap.dofs)[4])
+print(list(['Pitch']))
 
 ## Hydrostatics
 hydrostatics = flap.compute_hydrostatics(rho=1023.0)
@@ -43,7 +49,7 @@ f.write(line)
 f.close()
 
 ## Radiation and Diffraction
-omega_range = np.linspace(9, 11, 3)
+omega_range = np.linspace(0.04, 20, 500)
 test_matrix = xr.Dataset({
         "omega": omega_range,
         "wave_direction": [0.],
@@ -52,7 +58,7 @@ test_matrix = xr.Dataset({
         "rho": [1025.],
         })
 solver = cpt.BEMSolver()
-# dataset = solver.fill_dataset(test_matrix, flap)
+dataset = solver.fill_dataset(test_matrix, flap)
 # print(dataset.keys())
 
 data = cpt.io.xarray.separate_complex_values(dataset)

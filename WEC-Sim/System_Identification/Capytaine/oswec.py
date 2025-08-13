@@ -25,8 +25,8 @@ bem_cg = ((0,0,-3.90),
 bem_name = ('oswec_flap',
             'oswec_base')                                       # body names
 
-bem_w = np.linspace(0.04, 20.0, 3)                          # wave frequencies
-bem_headings = np.linspace(0,np.pi/2,3)                     # wave headings
+bem_w = np.linspace(0.04, 20.0, 500)                          # wave frequencies
+bem_headings = np.linspace(0,np.pi/2,10)                     # wave headings
 bem_w = np.linspace(9., 10., 2)                             # wave frequencies
 bem_headings = np.array([0.])                               # wave headings
 bem_depth = 10.90                                           # water depth
