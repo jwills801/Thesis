@@ -37,6 +37,22 @@ figure,
     subplot(132), plot(hydro.w,squeeze(hydro.B(3,3,:)),hydro_new.w,squeeze(hydro_new.B(3,3,:)),hydro_new2.w,squeeze(hydro_new2.B(3,3,:))), title('Heave'), grid
     subplot(133), plot(hydro.w,squeeze(hydro.B(5,5,:)),hydro_new.w,squeeze(hydro_new.B(5,5,:)),hydro_new2.w,squeeze(hydro_new2.B(5,5,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
 
+figure,
+    subplot(231), plot(hydro.w,squeeze(hydro.ex_re(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(1,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(1,1,:))), title('Surge'), grid, ylabel('Real Exitation Component')
+    subplot(232), plot(hydro.w,squeeze(hydro.ex_re(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(3,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(3,1,:))), title('Heave'), grid
+    subplot(233), plot(hydro.w,squeeze(hydro.ex_re(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+    subplot(234), plot(hydro.w,squeeze(hydro.ex_im(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(1,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(1,1,:))), title('Surge'), grid, ylabel('Imaginary Exitation Component')
+    subplot(235), plot(hydro.w,squeeze(hydro.ex_im(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(3,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(3,1,:))), title('Heave'), grid
+    subplot(236), plot(hydro.w,squeeze(hydro.ex_im(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+
+figure,
+    subplot(231), plot(hydro.w,squeeze(hydro.ex_re(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(1,1,:))), title('Surge'), grid, xlabel('Frequency [rad/s]') , ylabel('Real Exitation Component')
+    subplot(232), plot(hydro.w,squeeze(hydro.ex_re(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(3,1,:))), title('Heave'), grid, xlabel('Frequency [rad/s]')
+    subplot(233), plot(hydro.w,squeeze(hydro.ex_re(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+    subplot(234), plot(hydro.w,squeeze(hydro.ex_im(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(1,1,:))), title('Surge'), grid, xlabel('Frequency [rad/s]'), ylabel('Imaginary Exitation Component')
+    subplot(235), plot(hydro.w,squeeze(hydro.ex_im(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(3,1,:))), title('Heave'), grid, xlabel('Frequency [rad/s]')
+    subplot(236), plot(hydro.w,squeeze(hydro.ex_im(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+
 %% Added Mass
 hydro.forceAddedMass = hydro.A(1:6,1:6,end)*acceleration*rho;
 plotForces(time,forceAddedMass,hydro.forceAddedMass)
@@ -52,14 +68,15 @@ phase = waves.phase';
 omega = waves.omega';
 [spectrum,power] = JS_Spectrum(20,.99,3.3,omega);
 dw = [omega(2)-omega(1); diff(omega')];
-% figure, plot(hydro.w,spectrum), ylabel('Spectrum [m^2 s/rad]') % plotSpectrum(waves)
+% figure, plot(omega,spectrum), ylabel('Spectrum [m^2 s/rad]') % plotSpectrum(waves)
+% plotSpectrum(waves)
 
 hydro.forceExcitation = NaN(size(hydro.forceRestoring));
 for i = 1:sum(hydro.dof)
     ex_re = interp1(hydro.w,squeeze(hydro.ex_re(i,1,:)),omega);
     ex_im = interp1(hydro.w,squeeze(hydro.ex_im(i,1,:)),omega);
     F = squeeze((ex_re'+ex_im'*1i)) * rho*g;
-    hydro.forceExcitation(i,:) = real(exp(1i*(time*omega+phase)) * (F.*sqrt(2*spectrum.*dw)));
+    hydro.forceExcitation(i,:) = real(exp(1i*(time*omega+phase)) * (F.*sqrt(2*spectrum'.*dw)));
 end
 plotForces(time,forceExcitation,hydro.forceExcitation)
 
@@ -77,23 +94,16 @@ for i = 1:sum(hydro.dof)
         rad.Kr(i,j,:) = (2/pi)*trapz(rad.w,B.*(cos(rad.w.*rad.time(:)).*rad.w), 2);    % This extra w is to dimensionalize B (we still need to multiply by density
     end
 end
-dof = 1;
-figure, plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:)))
+figure,
+dof = 1; subplot(131), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:))), ylabel('Surge Diagonal Entry in Kr [N/m]'), xlabel('Time')
+dof = 3; subplot(132), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:))), ylabel('Heave Diagonal Entry in Kr [N/m]'), xlabel('Time')
+dof = 5; subplot(133), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:))), ylabel('Pitch Diagonal Entry in Kr [Nm/rad]'), xlabel('Time')
 
-dof = 3;
-figure, plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:)))
-
-dof = 5;
-figure, plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:)))
-
-dof = 6; figure, plot(hydro.w,squeeze(hydro.B(dof,dof,:)),body(1).hydroData.simulation_parameters.w,squeeze(body(1).hydroData.hydro_coeffs.radiation_damping.all(dof,dof,:)))
-
-%%    % Convolution Integral
-tic
-rad.convTime = 0:.1:30;
-rad.convolutionLength = 10; % It takes about 10 seconds for Kr terms to decay plot(hydro.w,reshape(hydro.B,[12*12,500]))
+% Convolution Integral
+rad.convTime = 0:.1:30; % This time matches the time wecsim uses
+rad.convolutionLength = 10; % It takes about 30 seconds for Kr terms to decay
 F = NaN(12,length(time));   % Initilize force
-for time_ind = 1:301%length(time)         % Loop over time
+for time_ind = 201:231%length(time)         % Loop over time
         % Find the start and ending indices of the fine radiation time vector
     if time(time_ind) > rad.convolutionLength
         startTime = time(time_ind)-rad.convolutionLength; % Start time of convolution integral
@@ -116,156 +126,226 @@ for time_ind = 1:301%length(time)         % Loop over time
         % integrate over tau
     F(:,time_ind) = trapz(rad.convTime(1:endInd),integrand,2); % perform the integration
 end
-% figure, plot(time,F)
 figure, plot(time,F(5,:),time,forceRadiationDamping(5,:))
-toc
-return
 
-%% Check Sum of Forces Equals Mass Time Acceleration
-forceConstraint = output.constraints(1).forceConstraint';
-forcePTO = output.ptos(1).forceTotal';
-% figure, plot(time,forcePTO), ylabel('PTO force')
-
-M = [eye(3,3)*body(1).mass, zeros(3,3); zeros(3,3), diag(body(1).inertia)];
-A = body(1).hydroData.hydro_coeffs.added_mass.inf_freq(:,1:6)*simu.rho;
-
-massTimesAcceleration = (M+A)*acceleration;
-accelerationTorque = massTimesAcceleration(5,:)  + r*massTimesAcceleration(1,:).*cos(position(5,:)) - r*massTimesAcceleration(3,:).*sin(position(5,:));
-    % Linearized version - found in symbolicLinearizaton.m: theta_ddot*(I_55 + I_51*r + r*(I_15 + I_11*r))
-    I = M+A;
-    accelerationTorqueLinearized = ( I(5,5) + r*(I(5,1) + I(1,5) + r*I(1,1)) )*acceleration(5,:);
-figure, plot(time,accelerationTorque,time,accelerationTorqueLinearized)
-%%
-sumOfForces = forceTotal + forceAddedMass;
-netTorque = sumOfForces(5,:)  + r*sumOfForces(1,:).*cos(position(5,:)) - r*sumOfForces(3,:).*sin(position(5,:));
-
-figure, plot(time,accelerationTorque,time,netTorque),legend('m*a','sum of Forces'), grid, xlabel('Time [s]'), ylabel('Torque [Nm]')
-
-figure, plot(time,accelerationTorque - netTorque), ylabel('m*a-real total force'), grid
-
-i = 5;
-figure, plot(time,forceAddedMass(i,:),time,forceExcitation(i,:),time,forceLinearDamping(i,:),time,forceMorisonAndViscous(i,:),time,forceRadiationDamping(i,:),time,forceRestoring(i,:),time,forcePTO(i,:),time,forceConstraint(i,:))
-    legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
-    ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
-
-
+%% Inertial forces
 theta = position(5,:);
-figure, plot(time,getNetTorque(forceAddedMass,theta),time,getNetTorque(forceExcitation,theta),time,getNetTorque(forceLinearDamping,theta),time,getNetTorque(forceMorisonAndViscous,theta),time,getNetTorque(forceRadiationDamping,theta),time,getNetTorque(forceRestoring,theta),time,getNetTorque(forcePTO,theta),time,getNetTorque(forceConstraint,theta))
-    legend('Added Mass','Excitation','Linear Damping','Morison and Viscous','Radiation Damping','Restoring','PTO','Constraint')
-    ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
+torqueTotal = getNetTorque(forceTotal+forceAddedMass,theta);
+mass = [diag(repmat(body(1).mass(1),1,3)), zeros(3,3);zeros(3,3), diag(repmat(body(1).inertia(1),1,3))];
+I = mass+body(1).hydroData.hydro_coeffs.added_mass.inf_freq(1:6,1:6)*rho;
+forceStructuralInertia = I*acceleration;
+torqueStructuralInertia = getNetTorque(forceStructuralInertia,theta);
+torqueStructuralInertiaLinear = (I(5,5)+I(1,1)*5^2+(I(1,5)+I(5,1))*5)*acceleration(5,:);
+figure, plot(time,torqueTotal,time,torqueStructuralInertia,time,torqueStructuralInertiaLinear)
 
-%% Check added mass:
-forceAddedMassCheck = A*acceleration;
-figure, plot(time,forceAddedMass(5,:),time,forceAddedMassCheck(5,:))
-xlabel('Time'), ylabel('Added Mass [Nm]'), legend('WEC-Sim','My Check'), grid
+%% Recreate dynamics from scratch
+copy = struct();            % structure in which all dynamics from wecsim will be copied by re calculating dynamics from scratch
+copy.Hs = 0.99;             % [m] Significant Wave Height
+copy.Ts = 20;               % [s] Significant Wave Period
+copy.alpha = 1.7;           % Peak enhancement factor for JS spectrum
+copy.time = 0:.01:time(end);           % [s] Time vector
+copy.phase = waves.phase';   % use phase from wecSim
+copy.omega = waves.omega';   % use frequencies from wecSim
+copy.rampTime = 20;
+copy.dof = 6;
+copy.rho = 1023;
+copy.g = 9.81;
+copy.cog = [0;0;-3.9;0;0;0];
+copy.mass = 127000;
+copy.inertia = 1.85e6;
+copy.volume = 297.3760;
+copy.convolutionLength = 10;
+copy.convolutionDt = .01; % This is time that I used in wecsim, but it needs to be decreased
 
-%% Check Linear Damping
-figure, plot(time,forceLinearDamping)
-xlabel('Time'), ylabel('Linear Damping [N] or [Nm]')
+% Initialize arrays
+copy.position = NaN(copy.dof,length(copy.time));
+copy.velocity = NaN(copy.dof,length(copy.time));
+copy.acceleration = NaN(copy.dof,length(copy.time));
 
-%% Check Morison and Viscous
-figure, plot(time,forceMorisonAndViscous)
-xlabel('Time'), ylabel('Morison and Viscious Damping [N] or [Nm]')
+% inital conditions
+copy.position(:,1) = 0;
+copy.velocity(:,1) = 0;
 
-%% Check Radiation Damping
-%% Using the convolution
-% % resample impulse function to be on the same time scale as velocity (and
-% % pad extra values with zeros
-% Kr_coarse = 1e3*cat(3,body(1).hydroData.hydro_coeffs.radiation_damping.impulse_response_fun.K(:,1:6,:),zeros(6,6,1));
-% time_coarse = [body(1).hydroData.hydro_coeffs.radiation_damping.impulse_response_fun.t;time(end)];
-% Kr = NaN(6,6,length(time));
-% for i = 1:6
-%     for j = 1:6
-%         Kr(i,j,:) = interp1(time_coarse, squeeze(Kr_coarse(i,j,:)), time);
-%     end
-% end
-% 
-% % Calculate radiation damping at every time
-% forceRadiationDampingCheck = NaN(size(forceRadiationDamping));
-% for timeInd = 1:length(time)
-% 
-% tmp = 0;
-%     for tauInd = 1:timeInd-1
-%         tmp = tmp + Kr(:,:,timeInd-tauInd)*([1;1;1;1;1/r;1].*velocity(:,tauInd))*time(2);
-%     end
-% forceRadiationDampingCheck(:,timeInd) = tmp;
-% end
-% 
-% figure, plot(time,forceRadiationDamping), ylabel('Radiation Damping'), grid, legend
-% figure, plot(time,forceRadiationDampingCheck), ylabel('Radiation Damping Check: Convolution'), grid, legend
-% figure, plot(time,forceRadiationDamping-forceRadiationDampingCheck), ylabel('Damping Difference'), grid, legend
-
-%% Using State space Realization of radiation damping
-sys_rad = ss(body(1).hydroForce.hf1.ssRadf.A,body(1).hydroForce.hf1.ssRadf.B,body(1).hydroForce.hf1.ssRadf.C,body(1).hydroForce.hf1.ssRadf.D);
-forceRadiationDampingCheck = lsim(sys_rad,velocity,time);
-% figure, plot(time,forceRadiationDamping), ylabel('Radiation Damping'), grid, legend
-% figure, plot(time,forceRadiationDampingCheck), ylabel('Radiation Damping Check: SS'), grid, legend
-figure, plot(time,forceRadiationDamping-forceRadiationDampingCheck'), ylabel('Damping Difference'), grid, legend
-
-
-%% Check Restoring Force
-forceRestoringCheck = body(1).hydroForce.hf1.linearHydroRestCoef*(position-[body(1).centerGravity;0;0;0]) + ...
-    [zeros(2,1);simu.gravity*body(1).mass-simu.rho*simu.gravity*body(1).volume;zeros(3,1)];
-figure, plot(time,forceRestoring - forceRestoringCheck), ylabel('Restoring Difference')
-
-K = body(1).hydroForce.hf1.linearHydroRestCoef;
-torqueRestoring = K(5,5)*position(5,:) - r*sin(position(5,:)).*(K(3,3)*(r*cos(position(5,:))-r)+simu.gravity*(body(1).mass-simu.rho*body(1).volume));
-torqueRestoringLinearized = (K(5,5) - r*simu.gravity*(body(1).mass-simu.rho*body(1).volume))*position(5,:);
-figure, plot(time,torqueRestoring,time,torqueRestoringLinearized)
-
-
-%% Full state space estimation of dynamics
-a = squeeze(body(1).hydroData.hydro_coeffs.added_mass.all(5,5,:)).*simu.rho;
-aInf = body(1).hydroData.hydro_coeffs.added_mass.inf_freq(5,5)*simu.rho;
-m = body(1).mass;
-k = body(1).hydroData.hydro_coeffs.linear_restoring_stiffness(5,5)*simu.rho*simu.gravity; 
-b = squeeze(body(1).hydroData.hydro_coeffs.radiation_damping.all(5,5,:)).*simu.rho.*body(1).hydroData.simulation_parameters.w';
-load('coeff.mat') % load transfer function found in plotFreqDep.m
-
-controller(1).plant.A = zeros(8);
-controller(1).plant.A(1,2) = -k/(m+aInf);
-controller(1).plant.A(1,5) = 1/(m+aInf);
-controller(1).plant.A(2:4,1:3)=eye(3);
-controller(1).plant.A(5,:)=[-coeff.KradNum -coeff.KradDen(2:end)];
-controller(1).plant.A(6:end,5:end-1) = eye(3);
-
-controller(1).plant.Bv = zeros(8,1);
-controller(1).plant.Bv(1,1) = 1/(m+aInf);
-controller(1).plant.Bu = zeros(8,1);
-controller(1).plant.Bu(1,1) = 1/(m+aInf);
-
-controller(1).plant.C = [1, zeros(1,8-1); ...
-    0, 1, zeros(1,8-2)];
-
-% Augmenting for the delta formulation which has Fpto in the states and replaces that w/ dFpto as the control input
-controller(1).plant.A = [controller(1).plant.A, controller(1).plant.Bu; zeros(1,8+1)];
-controller(1).plant.Bu = [zeros(8,1); 1];
-controller(1).plant.Bv = [controller(1).plant.Bv; 0];  
-controller(1).plant.C = [controller(1).plant.C zeros(2,1); zeros(1,8), 1]; 
-
-controller(1).plant.Du  = zeros(3,1);   % dFpto has no contripution to output states. [3x1] per each pod since output is Z, dZ, Fpto
-controller(1).plant.Dv = zeros(3,1);    % Fe has no contripution to output states
-
-% simulate the system
-dF_PTO = [0,diff(forcePTO(5,:))]/time(2);
-Fe = forceExcitation(5,:);
-sys_c = ss(controller(1).plant.A,[controller(1).plant.Bu controller(1).plant.Bv],controller(1).plant.C,[controller(1).plant.Du controller(1).plant.Dv]);
-X = NaN(length(time),length(sys_c.A));
-X(1,:) = zeros(1,length(sys_c.A));
-dX = X;
-for i = 2:length(time)
-    dX(i,:) = sys_c.A*X(i-1,:)' + sys_c.B*[dF_PTO(i-1);Fe(i-1)];
-    X(i,:) = X(i-1,:)' + dX(i,:)'*time(2);
+% Calculate excitation force ahead of time
+[copy.spectrum,copy.power] = JS_Spectrum(copy.Ts,copy.Hs,copy.alpha,copy.omega);
+dw = [copy.omega(2)-copy.omega(1); diff(copy.omega')];
+copy.dw = dw';
+    % figure, plot(copy.w,copy.spectrum), ylabel('Spectrum [m^2 s/rad]') % plotSpectrum(waves)
+copy.forceExcitation = NaN(copy.dof,length(copy.time));
+for i = 1:sum(copy.dof)
+    ex_re = interp1(hydro.w,squeeze(hydro.ex_re(i,1,:)),copy.omega);
+    ex_im = interp1(hydro.w,squeeze(hydro.ex_im(i,1,:)),copy.omega);
+    copy.F(i,:) = squeeze((ex_re+ex_im*1i)) * rho*g;
 end
-dzb_check = X(:,1);
-zb_check = X(:,2);
-F_PTO_check = X(:,9);
 
-figure
-subplot(311), plot(time,dzb_check,time,velocity(5,:)), ylim([-10 10])
-subplot(312), plot(time,zb_check,time,position(5,:))
-subplot(313), plot(time,F_PTO_check,time,forcePTO(5,:))
+% Calculate radiation impulse response function ahead of time 
+rad = struct();
+rad.time = 0:.01:copy.convolutionLength;
+rad.w = linspace(min(hydro.w),max(hydro.w),1001);
+rad.Kr = NaN(sum(hydro.dof), sum(hydro.dof), length(rad.time));
+rad.Kr2 = NaN(sum(hydro.dof), sum(hydro.dof), length(rad.time));
+for i = 1:copy.dof
+    disp(['Radiation impulse response function is ',num2str(i/copy.dof*100),' % done'])
+    for j = 1:copy.dof
+        B = interp1(hydro.w,squeeze(hydro.B(i,j,:)),rad.w);
+        rad.Kr(i,j,:) = (2/pi)*trapz(rad.w,B.*(cos(rad.w.*rad.time(:)).*rad.w), 2);    % This extra w is to dimensionalize B (we still need to multiply by density
+    end
+end
+copy.rad = rad;
 
+%%
+copy.forceExcitation2=forceExcitation(1:6,:);
+copy.forceRadiation2=forceRadiationDamping(1:6,:);
+copy.forceRestoring2=forceRestoring(1:6,:);
+endInd = 101;
+for timeInd = 1:endInd% length(copy.time)
+    timeInd
+    states = [copy.position(:,timeInd);copy.velocity(:,timeInd)];
+    out = WEC_dynamics(states,copy.time(timeInd),copy,hydro);
+    copy.position(:,timeInd+1)  = copy.position(:,timeInd) + copy.velocity(:,timeInd)*copy.time(2);
+    copy.velocity(:,timeInd+1)  = copy.velocity(:,timeInd) + out.acceleration*copy.time(2);
+
+    % Keep outputs
+    copy.forceExcitation(:,timeInd) = out.forceExcitation;
+    copy.forceRadiation(:,timeInd) = out.forceRadiation;
+    copy.forceRestoring(:,timeInd) = out.forceRestoring;
+end
+% figure, plot(copy.time,copy.position)
+%
+figure, plot(time,position(5,:),copy.time,copy.position(5,:)), ylabel('Angular Position [rad]'), legend('WECSim','Copy'), xlim([0 copy.time(endInd)])
+figure, plot(time,position(5,:),copy.time,copy.velocity(5,:)), ylabel('Angular Velocity [rad/s]'), legend('WECSim','Copy'), xlim([0 copy.time(endInd)])
+
+figure, plot(copy.time,copy.position(1,:),copy.time,5*sin(copy.position(5,:))), ylabel('Surge Position of COG [m]'), legend('from x','From theta')
+figure, plot(copy.time,copy.position(3,:),copy.time,5*cos(copy.position(5,:))-5), ylabel('Heave Position of COG [m]'), legend('from z','From theta')
+
+figure, plot(time,forceExcitation(5,:),copy.time,copy.forceExcitation(5,:)), ylabel('Excitation Torque in Pitch [Nm]'), legend('WECSim','Copy'), xlim([0 copy.time(endInd)])
+figure, plot(time,forceRadiationDamping(5,:),copy.time(1:101),copy.forceRadiation(5,:)), ylabel('Radiation Torque in Pitch [Nm]'), legend('WECSim','Copy'), xlim([0 copy.time(endInd)])
+figure, plot(time,forceRestoring(5,:),copy.time(1:101),copy.forceRestoring(5,:)), ylabel('Restoring Torque in Pitch [Nm]'), legend('WECSim','Copy'), xlim([0 copy.time(endInd)])
+
+
+%% Functions
+function out = WEC_dynamics(states,time,obj,hydro)
+% Inputs:
+    % states: 2*nDOF x 1
+    % time 1x1
+    % obj: structure with fields
+        % omega:            1 x nOmega      For the excitation force
+        % phase:            1 x nOmega      For the excitation force
+        % F:             nDOF x nOmega      For the excitation force
+        % spectrum:         1 x nOmega      For the excitation force
+        % dw:               1 x nOmega      For the excitation force
+        % rampTime:         1 x 1           Amount of time for the ramp on the excitation force
+        % g:                1 x 1           Gravitational constant
+        % cog:           nDOF x 1           Center of gravity of the flap
+        % mass:             1 x 1           Structural mass of flap
+        % volume:           1 x 1           Submerged volume of the flap
+        % velocity:      nDOF x nTime       All velocity measurements (future values are NaN)
+        % time              1 x nTime       Time vector which velocity is saved on
+        % convolutionDt:    1 x 1           Time step for the convolution integral
+        % convolutionLength:1 x 1           Length of time for convolution integral
+        % dof               1 x 1           Number of degrees of freedom
+        % rad: A structure with fields:
+             % Kr:      nDOF x nDOF x nTime
+             % time:        1 x nTime
+    % hydo: stucture with fields
+        % Khs:     nDOF x nDOF x nHeadings      Hydrostatic stiffness matrix
+
+% seperate position and velocity from state vector
+position = states(1:obj.dof);
+velocity = states((1+obj.dof):2*obj.dof);
+
+%  Excitation force
+forceExcitation = GetExcitationForce(obj,time);
+    % forceExcitation = interp1(obj.time,obj.forceExcitation2',time)';
+
+% Restoring force
+forceRestoring = hydro.Khs(:,:,1) * obj.rho*obj.g * (position-obj.cog) + ...
+                      [0;0;obj.g*obj.mass-obj.rho*obj.g*obj.volume;0;0;0];
+    % forceRestoring = interp1(obj.time,obj.forceRestoring2',time)';
+
+% Radiation force
+forceRadiation = GetRadiationForce(obj,time);
+    % forceRadiation = interp1(obj.time,obj.forceRadiation2',time)';
+
+% Total Force
+sumOfForces = forceExcitation - forceRadiation - forceRestoring;
+
+% Total Torque
+theta = position(5);
+sumOfTorque = getNetTorque(sumOfForces,theta);
+
+% Inertial force
+mass = [diag(repmat(obj.mass,1,3)), zeros(3,3);zeros(3,3), diag(repmat(obj.inertia,1,3))];
+addedMass = hydro.Ainf(1:obj.dof,1:obj.dof)*obj.rho;
+I = mass+addedMass;
+
+% Find acceleration - Linerized inertial force = \ddot \theta (I(5,5) + (I(5,1) + I(1,5))*r + I(1,1)*r^2)
+r = 5;
+thetaddot = sumOfTorque / (I(5,5) + (I(5,1) + I(1,5))*r + I(1,1)*r^2);
+
+% put back into 6 dof
+thetadot = velocity(5);
+acceleration = [r*thetaddot*cos(theta) - r*thetadot^2*sin(theta);0;-r*thetaddot*sin(theta)-r*thetadot^2*cos(theta);0;thetaddot;0];
+
+% Save to output
+out.acceleration = acceleration;
+out.forceExcitation = forceExcitation;
+out.forceRestoring = forceRestoring;
+out.forceRadiation = forceRadiation;
+end
+    
+function forceExcitation = GetExcitationForce(obj,time)
+% Inputs: obj is a structure with feilds
+    % omega:    1 x nOmega
+    % phase:    1 x nOmega
+    % F:     nDOF x nOmega
+    % spectrum: 1 x nOmega
+    % dw:       1 x nOmega
+    % rampTime: 1 x 1
+% Output: ForceExcitation: 6 x 1 vector
+
+ramp = .5*(1+cos(pi + pi/obj.rampTime*time))*(time<obj.rampTime) + (time>=obj.rampTime);
+
+forceExcitation = ramp* ...
+              real(sum( ...
+                  ones(obj.dof,1)*exp(1i*(time*obj.omega+obj.phase)) .* ...
+                  (obj.F.*sqrt(2*obj.spectrum.*obj.dw))...
+              ,2));
+end
+
+function forceRadiation = GetRadiationForce(obj,time)
+% Inputs: 
+    % obj is a structure with feilds:
+        % convolutionDt:  1x1 Time step for the convolution integral
+        % convolutionLength: 1x1 Length of time for convolution integral
+        % dof 1x1 Number of degrees of freedom
+        % rad: A structure with fields:
+             % Kr: nDOF x nDOF x nTime
+            % time: 1 x nTime
+    % time: 1x1 Current time that the radiation force is calculated at
+% Outputs:
+    % forceRadiation: nDOF x 1
+
+convTime = 0:obj.convolutionDt:obj.convolutionLength;
+if time > obj.convolutionLength % If the time is greater than our time vector, start the integration obj.convolutionLength seconds before
+    startTime = time-obj.convolutionLength; % Start time of convolution integral
+    endInd = length(convTime);
+else % If the time is less than out time vector, just start at zero and go to the current time
+    startTime = 0;
+    [~,  endInd] = min(abs(convTime-time)); % ending index corresponding to length of integration
+end
+
+% Compute integrand for each value of tau
+integrand = NaN(obj.dof,endInd);         % Initialize integrand
+for tau_ind = 1:endInd              % Loop over values of tau
+    tau = startTime+convTime(tau_ind);
+    v = interp1(obj.time,obj.velocity',tau)';% Interpolate velocity since it is on a different time mesh
+    Kr = interpolateMatrix(obj.rad,time-tau)*obj.rho;    % times by rho to dimensionalize
+    integrand(:,tau_ind) = Kr(1:obj.dof,1:obj.dof)*v;           % Store the integrand for each value of tau
+end
+% integrate over tau
+forceRadiation = trapz(convTime(1:endInd),integrand,2); % perform the integration
+end
 
 
 function torque = getNetTorque(forces,theta)
@@ -283,9 +363,9 @@ end
 
 function [spectrum,power] = JS_Spectrum(Tp,Hs,gamma,omega)
 waterDepth = 10.9;
-g = 9.81; rho = 1000;
+g = 9.81; rho = 1023;
 frequency = omega'/(2*pi);
-dw = [omega(2)-omega(1); diff(omega')];
+dw = [omega(2)-omega(1), diff(omega)];
 
 % Pierson-Moskowitz Spectrum from IEC TS 62600-2 ED2 Annex C.2 (2019)
 bPM = (5/4)*(1/Tp)^(4);
@@ -302,14 +382,22 @@ gammaAlpha(lind) = gamma.^exp(-(frequency(lind)-fp).^2/(2*siga^2*fp^2));
 gammaAlpha(hind) = gamma.^exp(-(frequency(hind)-fp).^2/(2*sigb^2*fp^2));
 C = 1 - 0.287*log(gamma);
 %fSpectrum = C*fSpectrum.*gammaAlpha;                                % Wave Spectrum [m^2-s]
-spectrum = fSpectrum/(2*pi);
+spectrum = fSpectrum'/(2*pi);
 
 waveNumber = calcWaveNumber(omega,waterDepth,g,0); %Calculate Wave Number for Larger Number of Frequencies Before Down Sampling in Equal Energy Method
-power = sum((1/2)*rho*g*spectrum'.*dw'.*sqrt(g./waveNumber.*tanh(waveNumber.*waterDepth)).*(1 + 2.*waveNumber.*waterDepth./sinh(2.*waveNumber.*waterDepth)));
+power = sum((1/2)*rho*g*spectrum.*dw.*sqrt(g./waveNumber.*tanh(waveNumber.*waterDepth)).*(1 + 2.*waveNumber.*waterDepth./sinh(2.*waveNumber.*waterDepth)));
 
 end
 
 function Kr = interpolateMatrix(rad,time)
+% Inputs:
+    % rad: A structure with the fields
+        % Kr:   nDOF x nDOF x nTime     Radiation impulse response function
+        % time:    1 x nTime            Time vector corresponding to Kr
+    % time      1x1:            Time at which the matrix Kr is desired
+% Outputs:
+    % Kr: nDOF x nDOF       Radiation damping convolution kernal at the desires time
+
 n = size(rad.Kr,1);
 m = size(rad.Kr,2);
 Kr = NaN(n,m);
