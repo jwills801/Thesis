@@ -40,18 +40,28 @@ figure,
 figure,
     subplot(231), plot(hydro.w,squeeze(hydro.ex_re(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(1,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(1,1,:))), title('Surge'), grid, ylabel('Real Exitation Component')
     subplot(232), plot(hydro.w,squeeze(hydro.ex_re(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(3,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(3,1,:))), title('Heave'), grid
-    subplot(233), plot(hydro.w,squeeze(hydro.ex_re(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+    subplot(233), plot(hydro.w,squeeze(hydro.ex_re(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_re(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
     subplot(234), plot(hydro.w,squeeze(hydro.ex_im(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(1,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(1,1,:))), title('Surge'), grid, ylabel('Imaginary Exitation Component')
     subplot(235), plot(hydro.w,squeeze(hydro.ex_im(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(3,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(3,1,:))), title('Heave'), grid
-    subplot(236), plot(hydro.w,squeeze(hydro.ex_im(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+    subplot(236), plot(hydro.w,squeeze(hydro.ex_im(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:)),hydro_new2.w,squeeze(hydro_new2.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
 
 figure,
     subplot(231), plot(hydro.w,squeeze(hydro.ex_re(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(1,1,:))), title('Surge'), grid, xlabel('Frequency [rad/s]') , ylabel('Real Exitation Component')
     subplot(232), plot(hydro.w,squeeze(hydro.ex_re(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(3,1,:))), title('Heave'), grid, xlabel('Frequency [rad/s]')
-    subplot(233), plot(hydro.w,squeeze(hydro.ex_re(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+    subplot(233), plot(hydro.w,squeeze(hydro.ex_re(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
     subplot(234), plot(hydro.w,squeeze(hydro.ex_im(1,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(1,1,:))), title('Surge'), grid, xlabel('Frequency [rad/s]'), ylabel('Imaginary Exitation Component')
     subplot(235), plot(hydro.w,squeeze(hydro.ex_im(3,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(3,1,:))), title('Heave'), grid, xlabel('Frequency [rad/s]')
-    subplot(236), plot(hydro.w,squeeze(hydro.ex_im(4,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+    subplot(236), plot(hydro.w,squeeze(hydro.ex_im(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
+
+%%
+hydro = struct();
+hydro_old = readCAPYTAINE(hydro,'System_Identification/Capytaine/oswec_full.nc');
+hydro_new = readCAPYTAINE(hydro,'System_Identification/Capytaine/oswec.nc');
+figure, plot(hydro_old.w,squeeze(hydro_old.B(5,5,:)),'.',hydro_new.w,squeeze(hydro_new.B(5,5,:)),'.'), title('Damping Coeff in Pitch'), grid, xlabel('Frequency [rad/s]')
+
+figure,
+subplot(211), plot(hydro_old.w,squeeze(hydro_old.ex_re(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_re(5,1,:))), title('Pitch Excitation Coefficient'), grid, xlabel('Frequency [rad/s]') , ylabel('Real')
+subplot(212), plot(hydro_old.w,squeeze(hydro_old.ex_im(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:))), grid, xlabel('Frequency [rad/s]'), ylabel('Imaginary')
 
 %% Added Mass
 hydro.forceAddedMass = hydro.A(1:6,1:6,end)*acceleration*rho;

@@ -18,7 +18,6 @@ ex_im = interp1(hydro.w,squeeze(hydro.ex_im(5,1,:)),omega);
 F = squeeze((ex_re+ex_im*1i)) * rho*g;
 ramp = .5*(1+cos(pi + pi/rampTime*time)).*(time<rampTime) + (time>=rampTime);
 torqueExcitation = ramp.* real(sum( exp(1i*(time*omega+phase)) .* (F.*sqrt(2*spectrum.*dw)) ,2));
-figure, plot(time,torqueExcitation)
 
 % 6 DOF version of excitaton torque
 hydro6DOF = struct();
@@ -31,12 +30,21 @@ for i = 1:sum(hydro6DOF.dof)
     hydro6DOF.forceExcitation(i,:) = ramp.*real(exp(1i*(time*omega+phase)) * (hydro6DOF.F.*sqrt(2*spectrum'.*dw')));
 end
 figure, % Compares these to wecsim (which uses oswec_full.nc)
-    subplot(131), plot(time,forceExcitation(1,:),time,hydro6DOF.forceExcitation(1,:)), title('Surge'), grid, ylabel('Force or Torque [N or Nm]')
-    subplot(132), plot(time,forceExcitation(3,:),time,hydro6DOF.forceExcitation(3,:)), title('Heave'), grid
-    subplot(133), plot(time,forceExcitation(5,:),time,hydro6DOF.forceExcitation(5,:)), title('Pitch'), grid, xlabel('Time [s]')
-theta = 0;
+    subplot(131), plot(time,output.bodies(1).forceExcitation(:,1),time,hydro6DOF.forceExcitation(1,:)), title('Surge'), grid, ylabel('Force or Torque [N or Nm]')
+    subplot(132), plot(time,output.bodies(1).forceExcitation(:,3),time,hydro6DOF.forceExcitation(3,:)), title('Heave'), grid
+    subplot(133), plot(time,output.bodies(1).forceExcitation(:,5),time,hydro6DOF.forceExcitation(5,:)), title('Pitch'), grid, xlabel('Time [s]')
+theta = 0; r = 5;
 hydro6DOF.torqueExcitation = hydro6DOF.forceExcitation(5,:)  + r*hydro6DOF.forceExcitation(1,:).*cos(theta) - r*hydro6DOF.forceExcitation(3,:).*sin(theta);
 figure, plot(time,hydro6DOF.torqueExcitation,time,torqueExcitation) % It matches!!
+
+
+%%
+theta = output.bodies(1).position(:,5); r = 5;
+torqueStiffness = hydro.Khs(5,5)*rho*g * theta;
+hydro6DOF.forceStiffness = hydro6DOF.Khs(1:6,1:6)* output.bodies(1).position';
+size(hydro6DOF.forceStiffness)
+% hydro6DOF.torqueStiffness = hydro6DOF.forceStiffness(5,:)  + r*hydro6DOF.forceStiffness(1,:).*cos(theta) - r*hydro6DOF.forceStiffness(3,:).*sin(theta);
+%figure, plot(time,torqueStiffness,time,hydro6DOF.torqueStiffness)
 
 
 
