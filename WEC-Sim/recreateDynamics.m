@@ -54,9 +54,9 @@ figure,
     subplot(236), plot(hydro.w,squeeze(hydro.ex_im(5,1,:)),hydro_new.w,squeeze(hydro_new.ex_im(5,1,:))), title('Pitch'), grid, xlabel('Frequency [rad/s]')
 
 %%
-hydro = struct();
-hydro_old = readCAPYTAINE(hydro,'System_Identification/Capytaine/oswec_full.nc');
-hydro_new = readCAPYTAINE(hydro,'System_Identification/Capytaine/oswec.nc');
+hydro_tmp = struct();
+hydro_old = readCAPYTAINE(hydro_tmp,'System_Identification/Capytaine/oswec_full.nc');
+hydro_new = readCAPYTAINE(hydro_tmp,'System_Identification/Capytaine/oswec.nc');
 figure, plot(hydro_old.w,squeeze(hydro_old.B(5,5,:)),'.',hydro_new.w,squeeze(hydro_new.B(5,5,:)),'.'), title('Damping Coeff in Pitch'), grid, xlabel('Frequency [rad/s]')
 
 figure,
@@ -97,7 +97,6 @@ rad = struct();
 rad.time = 0:.01:50;
 rad.w = linspace(min(hydro.w),max(hydro.w),1001);
 rad.Kr = NaN(sum(hydro.dof), sum(hydro.dof), length(rad.time));
-rad.Kr2 = NaN(sum(hydro.dof), sum(hydro.dof), length(rad.time));
 for i = 1:sum(hydro.dof)
     for j = 1:sum(hydro.dof)
         B = interp1(hydro.w,squeeze(hydro.B(i,j,:)),rad.w);
@@ -137,6 +136,25 @@ for time_ind = 201:231%length(time)         % Loop over time
     F(:,time_ind) = trapz(rad.convTime(1:endInd),integrand,2); % perform the integration
 end
 figure, plot(time,F(5,:),time,forceRadiationDamping(5,:))
+%% Radiation Damping State Space
+figure, plot(rad.time,squeeze(rad.Kr(5,5,:))), hold on, ax = gca;
+for n = 5
+    theta_0 = zeros(2*n,1);
+    fun = @(theta) CompareImpulse(theta,rad,n);
+options = optimoptions('lsqnonlin','PlotFcn','optimplotresnorm');
+theta = lsqnonlin(fun,theta_0,[],[],options);
+
+[error,K_hat] = CompareImpulse(theta,rad,n);
+plot(ax,rad.time,K_hat)
+end
+hold off
+A = [zeros(1,n-1), -theta(1);
+    eye(n-1), -theta(2:n)];
+B = -theta(n+1:end);
+C = [zeros(1,n-1), 1];
+rad.ss = ss(A,B,C,0);
+forceRadiationDampingCheck = lsim(rad.ss,velocity(5,:),time);
+figure, plot(time,F(5,:),time,forceRadiationDamping(5,:),time,forceRadiationDampingCheck*1000)
 
 %% Inertial forces
 theta = position(5,:);
@@ -193,7 +211,6 @@ rad = struct();
 rad.time = 0:.01:copy.convolutionLength;
 rad.w = linspace(min(hydro.w),max(hydro.w),1001);
 rad.Kr = NaN(sum(hydro.dof), sum(hydro.dof), length(rad.time));
-rad.Kr2 = NaN(sum(hydro.dof), sum(hydro.dof), length(rad.time));
 for i = 1:copy.dof
     disp(['Radiation impulse response function is ',num2str(i/copy.dof*100),' % done'])
     for j = 1:copy.dof
@@ -416,5 +433,20 @@ Kr = NaN(n,m);
             Kr(i,j) = interp1(rad.time,squeeze(rad.Kr(i,j,:)),time);
         end
     end
+end
+
+function [error,K_hat] = CompareImpulse(theta,rad,n)
+A = [zeros(1,n-1), -theta(1);
+    eye(n-1), -theta(2:n)];
+
+B = -theta(n+1:end);
+
+C = [zeros(1,n-1), 1];
+
+K_hat = NaN(length(rad.time),1);
+for time_ind = 1:length(rad.time)
+    K_hat(time_ind) = C*expm(A*rad.time(time_ind))*B;
+end
+error = squeeze(rad.Kr(5,5,:)) - K_hat;
 end
 
