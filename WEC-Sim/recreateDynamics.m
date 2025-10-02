@@ -5,6 +5,7 @@ r = 5; % Distance from hinge to center of gravity
 time = output.bodies(1).time;
 rho = 1000;
 g = 9.81;
+m = 127e3;
 centerOfGravity = [0;0;-3.9;0;0;0];
 centerOfBuoyancy = [0;0;-4.5915;0;0;0];
 
@@ -65,11 +66,22 @@ subplot(212), plot(hydro_old.w,squeeze(hydro_old.ex_im(5,1,:)),hydro_new.w,squee
 
 %% Added Mass
 hydro.forceAddedMass = hydro.A(1:6,1:6,end)*acceleration*rho;
-plotForces(time,forceAddedMass,hydro.forceAddedMass)
+% plotForces(time,forceAddedMass,hydro.forceAddedMass), title('Added Mass')
+
+hydro_new2.torqueAddedMass = hydro_new2.A(5,5,end)*acceleration(5,:)*rho;
+torqueAddedMass = getNetTorque(forceAddedMass,position(5,:));
+figure, subplot(211), plot(time,torqueAddedMass,time,hydro_new2.torqueAddedMass), grid, xlim([200 300]), ylabel('Added Mass Torque [Nm]'), , legend('6 DOF', '1 DOF')
+        subplot(212), plot(time,position(5,:)*180/pi), grid, xlim([200 300]), ylabel('Position [Deg]'), xlabel('Time [s]')
+
+return
 
 %% Hydrostatic Stiffness
 hydro.forceRestoring = hydro.Khs(:,:,1)*rho*g*(position-centerOfGravity) + [0;0;g*127000-rho*g*body(1).volume;0;0;0];
-plotForces(time,forceRestoring,hydro.forceRestoring)
+%plotForces(time,forceRestoring,hydro.forceRestoring)
+
+torqueRestoring = getNetTorque(forceRestoring,position(5,:));
+torqueRestoringCheck = (rho*Vol*g*4 - m*g*5)*position(5,:);
+figure, plot(time,torqueRestoring,time,torqueRestoringCheck), grid, xlim([200 300]), ylabel('Restoring Torque [Nm]')
 
 %% Excitation Force
 % phaseSeed = 1; rng(phaseSeed);
@@ -155,6 +167,10 @@ C = [zeros(1,n-1), 1];
 rad.ss = ss(A,B,C,0);
 forceRadiationDampingCheck = lsim(rad.ss,velocity(5,:),time);
 figure, plot(time,F(5,:),time,forceRadiationDamping(5,:),time,forceRadiationDampingCheck*1000)
+
+%%
+hydro = radiationIRF(hydro,[],[],[],[],[]);
+hydro_new2 = radiationIRFSS(hydro_new2,[],[]);
 
 %% Inertial forces
 theta = position(5,:);
