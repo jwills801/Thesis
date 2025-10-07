@@ -116,12 +116,12 @@ for i = 1:sum(hydro.dof)
     end
 end
 figure,
-dof = 1; subplot(131), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:))), ylabel('Surge Diagonal Entry in Kr [N/m]'), xlabel('Time')
-dof = 3; subplot(132), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:))), ylabel('Heave Diagonal Entry in Kr [N/m]'), xlabel('Time')
-dof = 5; subplot(133), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:)),rad.time,squeeze(rad.Kr2(dof,dof,:))), ylabel('Pitch Diagonal Entry in Kr [Nm/rad]'), xlabel('Time')
+dof = 1; subplot(131), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:))), ylabel('Surge Diagonal Entry in Kr [N/m]'), xlabel('Time')
+dof = 3; subplot(132), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:))), ylabel('Heave Diagonal Entry in Kr [N/m]'), xlabel('Time')
+dof = 5; subplot(133), plot(hydro.ra_t,squeeze(hydro.ra_K(dof,dof,:)),rad.time,squeeze(rad.Kr(dof,dof,:))), ylabel('Pitch Diagonal Entry in Kr [Nm/rad]'), xlabel('Time')
 
 % Convolution Integral
-rad.convTime = 0:.1:30; % This time matches the time wecsim uses
+rad.convTime = 0:.01:30; % This time matches the time wecsim uses
 rad.convolutionLength = 10; % It takes about 30 seconds for Kr terms to decay
 F = NaN(12,length(time));   % Initilize force
 for time_ind = 201:231%length(time)         % Loop over time

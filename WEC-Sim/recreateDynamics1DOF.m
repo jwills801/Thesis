@@ -28,9 +28,9 @@ rad.Kr = (2/pi)*trapz(rad.w,B.*(cos(rad.w.*rad.time(:))), 2);
 %%
 % Convolution Integral
 rad.convTime = 0:.01:30; % This time matches the time wecsim uses
-rad.convolutionLength = 20; % It takes about 30 seconds for Kr terms to decay
+rad.convolutionLength = 30; % It takes about 30 seconds for Kr terms to decay
 F = NaN(length(time),1);   % Initilize force
-timeInds = 3401:3501;
+timeInds = 3401:3501; timeInds = 2:1001;
 figWaitbar = waitbar(0,'Convolution Integral');
 for time_ind = timeInds%:length(time)         % Loop over time
     waitbar((time_ind-timeInds(1))/(timeInds(end)-timeInds(1)),figWaitbar)
@@ -52,12 +52,12 @@ for time_ind = timeInds%:length(time)         % Loop over time
         integrand(tau_ind) = Kr*v;           % Store the integrand for each value of tau
     end
         
-        % integrate over tau
+    % integrate over tau
     F(time_ind) = trapz(rad.convTime(1:endInd),integrand); % perform the integration
 end
 close(figWaitbar)
 r = 5; theta = position(5,:); forces = forceRadiationDamping;
-c = forces(5,:)  + r*forces(1,:).*cos(theta) - r*forces(3,:).*sin(theta);
+torqueRadiationDamping = forces(5,:)  + r*forces(1,:).*cos(theta) - r*forces(3,:).*sin(theta);
 figure, plot(time,F,time,torqueRadiationDamping), xlim([time(timeInds(1))-5, time(timeInds(end))+5])
 
 %% Radiation Damping State Space
