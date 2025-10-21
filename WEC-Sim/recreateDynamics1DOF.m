@@ -6,6 +6,23 @@ params.hydro = hydro;
 params.rho = 1025;
 params.g = 9.81;
 
+centerOfGravity = [0;0;-3.9;0;0;0];
+centerOfBuoyancy = [0;0;-4.5915;0;0;0];
+
+position = output.bodies(1).position';
+velocity = output.bodies(1).velocity';
+acceleration = output.bodies(1).acceleration';
+
+forceTotal = output.bodies(1).forceTotal';
+forceExcitation = output.bodies(1).forceExcitation';
+forceAddedMass = output.bodies(1).forceAddedMass';
+forceLinearDamping = output.bodies(1).forceLinearDamping';
+forceMorisonAndViscous = output.bodies(1).forceMorisonAndViscous';
+forceRadiationDamping= output.bodies(1).forceRadiationDamping';
+forceRestoring = output.bodies(1).forceRestoring';
+forceTotalCheck = forceExcitation - forceAddedMass - forceLinearDamping - forceMorisonAndViscous - forceRadiationDamping - forceRestoring;
+% figure, plot(time,forceTotal-forceTotalCheck)
+
 params.Ts = 20;
 params.Hs = 0.99;
 params.alpha = NaN;
@@ -21,7 +38,7 @@ rad = struct();
 rad.time = 0:.01:50;
 rad.w = linspace(min(hydro.w)*.01,max(hydro.w),1001);
 
-B = interp1(hydro.w,squeeze(hydro.B(5,5,:)).*hydro.w'*rho,rad.w); % This extra w and rho is to dimensionalize B 
+B = interp1(hydro.w,squeeze(hydro.B(5,5,:)).*hydro.w'*params.rho,rad.w); % This extra w and rho is to dimensionalize B 
 B(~isfinite(B)) = 0;
 rad.Kr = (2/pi)*trapz(rad.w,B.*(cos(rad.w.*rad.time(:))), 2);    
 
@@ -42,7 +59,7 @@ for time_ind = timeInds%:length(time)         % Loop over time
         startTime = 0;
         [~,  endInd] = min(abs(rad.convTime-time(time_ind))); % ending index corresponding to length of integration
     end
-        
+
         % Compute integrand for each value of tau
     integrand = NaN(endInd,1);         % Initialize integrand
     for tau_ind = 1:endInd              % Loop over values of tau
@@ -51,7 +68,7 @@ for time_ind = timeInds%:length(time)         % Loop over time
         Kr = interp1(rad.time,rad.Kr,time(time_ind)-tau);
         integrand(tau_ind) = Kr*v;           % Store the integrand for each value of tau
     end
-        
+
     % integrate over tau
     F(time_ind) = trapz(rad.convTime(1:endInd),integrand); % perform the integration
 end
@@ -63,8 +80,8 @@ figure, plot(time,F,time,torqueRadiationDamping), xlim([time(timeInds(1))-5, tim
 %% Radiation Damping State Space
 figure, plot(rad.time,rad.Kr), hold on, ax1 = gca; fig1 = gcf; grid
 figure, plot(time,F), hold on, ax2 = gca; grid
-for n = 2
-    theta_0 = ones(2*n,1);
+for n = 3
+    theta_0 = ones(2*n-1,1);
     fun = @(theta) CompareImpulse(theta,rad,n);
     options = optimoptions('lsqnonlin','PlotFcn','optimplotresnorm');
     theta = lsqnonlin(fun,theta_0,[],[],options)
@@ -74,7 +91,7 @@ for n = 2
 
     A = [zeros(1,n-1), -theta(1);
         eye(n-1), -theta(2:n)];
-    B = theta(n+1:end)*1e7;
+    B = [0;theta(n+1:end)]*1e7;
     C = [zeros(1,n-1), 1];
     rad.ss = ss(A,B,C,0);
     forceRadiationDampingCheck = lsim(rad.ss,velocity(5,:),time);
@@ -93,12 +110,13 @@ figure, subplot(211), semilogx(w,20*log10(abs(K)),w,20*log10(abs(squeeze(mag))))
 % savefig("figures/StateSpaceRadDamp_bodeCheck.fig")
 
 figure, plot(time, torqueRadiationDamping,time,F,time,forceRadiationDampingCheck)
-
+figure, bode(rad.ss), hold on, bode(Khat), hold off
+return
 %%
 w = hydro.w';
-B = squeeze(hydro.B(5,5,:)).*w*rho; B(~isfinite(B)) = 0;
-A = squeeze(hydro.A(5,5,:))*rho;
-Ainf = hydro.Ainf(5,5)*rho;
+B = squeeze(hydro.B(5,5,:)).*w*params.rho; B(~isfinite(B)) = 0;
+A = squeeze(hydro.A(5,5,:))*params.rho;
+Ainf = hydro.Ainf(5,5)*params.rho;
 
 Kr = (2/pi)*trapz(w,B.*(cos(w.*rad.time)),1)';
 A2 = NaN(size(w));
@@ -266,7 +284,7 @@ end
 function [error,K_hat] = CompareImpulse(theta,rad,n)
     A = [zeros(1,n-1), -theta(1);
         eye(n-1), -theta(2:n)];
-    B = theta(n+1:end)*1e7;
+    B = [0;theta(n+1:end)]*1e7;
     C = [zeros(1,n-1), 1];
 
 K_hat = NaN(length(rad.time),1);

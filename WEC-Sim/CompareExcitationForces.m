@@ -36,7 +36,8 @@ figure, % Compares these to wecsim (which uses oswec_full.nc)
 theta = position(5,:); r = 5;
 hydro6DOF.torqueExcitation = hydro6DOF.forceExcitation(5,:)  + r*hydro6DOF.forceExcitation(1,:).*cos(theta) - r*hydro6DOF.forceExcitation(3,:).*sin(theta);
 %%
-figure, subplot(212), plot(time,hydro6DOF.torqueExcitation,time,torqueExcitation), grid, xlim([200 300]), ylabel('Excitation Torque'), xlabel('Time [s]')
+figure, subplot(211), plot(time,position(5,:)),grid, xlim([200 300]), ylabel('Position [rad]'), xlabel('Time [s]')
+subplot(212), plot(time,hydro6DOF.torqueExcitation,time,torqueExcitation), grid, xlim([200 300]), ylabel('Excitation Torque [Nm]'), xlabel('Time [s]')
 
 
 %%
