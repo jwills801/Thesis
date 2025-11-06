@@ -9,7 +9,16 @@ capArea = areaRatio*rodArea; % m^2
 capRadius = sqrt(capArea/pi);
 rodRadius = sqrt((areaRatio-1)*rodArea/pi);
 stroke = 5; % m
-PR = [0 5 10 20 30]*1e6;
+PR = [0 10]*1e6;
+r= 1.18; % Moment arm from force to torque
+capTorqueOptions = PR*capArea*r;
+rodTorqueOptions = PR*rodArea*r;
+ptoTorqueOptions = capTorqueOptions'-rodTorqueOptions;
+x= sort(ptoTorqueOptions(:));
+figure, plot([1,2],[x,x])
+% figure, plot(x,'*')
+%figure, plot(diff(x))
+%%
 nPR = length(PR);
 
 % set valve constant k: Q = k*sqrt(deltaP)
@@ -139,83 +148,8 @@ figure, plot(delP_chosen,b_chosen,'*',x,b_coeffs*x), ylabel('b'), xlabel('delta 
 c_coeffs = pinv([delP_chosen'.^2,ones(size(delP_chosen'))])*c_chosen'
 figure, plot(delP_chosen,c_chosen,'*',x,x.^2*c_coeffs(1)+c_coeffs(2)), ylabel('c'), xlabel('delta P [MPa]'), grid
 figure, plot(delP_chosen,d_chosen,'*',x,d*ones(size(x))), ylabel('d'), xlabel('delta P [MPa]'), grid
-return
-%% Torques
-% Positive thetadot results in extension of the cylinder
-% Positive torque acts to extend the cylinder and move theta positive
-r= 1.18; % Moment arm from force to torque
-stroke = 5;
-oldTorqueInd = 0;
-thetaDotVals = linspace(-pi/4,pi/4,11);
-thetaVals = linspace(-pi/4,pi/4,11);
-for oldCapPR_ind = 1:nPR
-    for oldRodPR_ind = 1:nPR
-        oldTorqueInd = oldTorqueInd +1;
-        oldPTOTorque(oldTorqueInd) = (PR(oldCapPR_ind)*capArea - PR(oldRodPR_ind)*rodArea)*r;
-        
-        newTorqueInd = 0;
-        for newCapPR_ind = 1:nPR
-            for newRodPR_ind = 1:nPR
-                newTorqueInd = newTorqueInd +1;
-                newPTOTorque(newTorqueInd) = (PR(newCapPR_ind)*capArea - PR(newRodPR_ind)*rodArea)*r;
-                for thetaInd = 1:length(thetaVals)
-                    for thetaDotInd = 1:length(thetaDotVals)
-                        capFlow = capArea*thetaDotVals(thetaDotInd)*r;% Positive flow is flow into the cylinder, Positive thetadot results in extension of the cylinder
-                        capVolume = capArea*(stroke/2 + thetaVals(thetaInd)*r);% Positive flow is flow into the cylinder, Positive thetadot results in extension of the cylinder
-                        capLoss = interpn(PR,PR,velA_vals,vol_vals,Eloss,PR(oldCapPR_ind),PR(newCapPR_ind),capFlow,capVolume);
 
-                        rodFlow = -rodArea*thetaDotVals(thetaDotInd)*r;% Positive flow is flow into the cylinder, Positive thetadot results in extension of the cylinder
-                        rodVolume = rodArea*(stroke/2 - thetaVals(thetaInd)*r);% Positive flow is flow into the cylinder, Positive thetadot results in extension of the cylinder
-                        rodLoss = interpn(PR,PR,velA_vals,vol_vals,Eloss,PR(oldRodPR_ind),PR(newRodPR_ind),capFlow,capVolume);
-                        switchingTorqueLoss(oldTorqueInd,newTorqueInd,thetaDotInd,thetaInd) = capLoss + rodLoss;
-                    end
-                end
-                if (newTorqueInd == 1)&& (oldTorqueInd == 15 || oldTorqueInd == 4)
-                    disp('_______________________________')
-                    oldTorqueInd
-                    [oldCapPR_ind,oldRodPR_ind]
-                    [newCapPR_ind,newRodPR_ind]
-                    (PR(oldCapPR_ind)*capArea - PR(oldRodPR_ind)*rodArea)*r
-                    figure, surf(thetaDotVals,thetaVals,squeeze(switchingTorqueLoss(newTorqueInd,oldTorqueInd,:,:)))
-                    title([num2str(oldTorqueInd)])
-                    disp('_______________________________')
-                end
-            end
-        end
-    end
-end
 
-%%
-counter = 0;
-for newTorqueInd = 1%:nPR^2
-    for oldTorqueInd = 1:nPR^2
-        counter = counter + 1;
-        DeltaT(counter) = oldPTOTorque(oldTorqueInd) - newPTOTorque(newTorqueInd);
-        Loss{counter} = squeeze(switchingTorqueLoss(newTorqueInd,oldTorqueInd,:,:));
-    end
-end
-
-[DeltaT_sorted,sortingInds] = sort(DeltaT);
-
-TorqueSwitchingLossFig = figure; hold on
-for ind = 1:length(sortingInds)
-TorqueSwitchingLossFig; subplot(5,5,ind)
-surf(thetaDotVals,thetaVals,Loss{sortingInds(ind)}), zlim([0 3e5])
-title(['\Delta T = ',num2str(DeltaT_sorted(ind)/1e6),' MNm'])
-end
-TorqueSwitchingLossFig; hold off
-
-%%
-TorqueInd = 0;
-for oldCapPR_ind = 1:nPR
-    for oldRodPR_ind = 1:nPR
-        TorqueInd = TorqueInd +1;
-        if TorqueInd == 15 || TorqueInd == 4
-            [oldCapPR_ind,oldRodPR_ind]
-            (PR(oldCapPR_ind)*capArea - PR(oldRodPR_ind)*rodArea)*r
-        end
-    end
-end
 %% Least squares minimization
 function coeffs = LeastSquares(oldRail,newRail,params)
 
