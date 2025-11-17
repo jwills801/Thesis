@@ -1,142 +1,91 @@
-clear, close all
 params = getParameters;
-U = params.PR'/1e6;
-unsolvedNodes = {};
-solvedNodes = {};
-timeSteps = 10;
-unsolvedNodes{1}.lb = min(U)*ones(timeSteps*2,1);
-unsolvedNodes{1}.ub = max(U)*ones(timeSteps*2,1);
-unsolvedNodes{1}.parentCost = NaN;
-bestCost = 1e3;
-flag = 0;
-iter = 1;
-iterMax = 1000;
-tic
-while flag == 0
-% take next node to solve
-    node = unsolvedNodes{1};
+params.timeSteps = 15;
+u = zeros(params.timeSteps*2,1);
 
-% solve node
-tic
-    node = solveNode(node,params);
-    toc
+% Forward Dynamics
+params.plotFigures=1;
 
-% Remove solved node
-    unsolvedNodes(1) = [];
-    solvedNodes{end+1} = node;
+for i = 1:5
+    % Forward Dynamics
+    out = dynamics(u,params);
 
-% At the beginning, round to the nearest node to get an integer solution
-if iter == 1
-    [M,I] = min(abs(solvedNodes{1}.u' - repmat(U,[1,timeSteps*2])));
-    quickNode.lb = U(I);
-    quickNode.ub = U(I);
-    quickNode.parentCost = solvedNodes{1}.cost;
-    quickNode = solveNode(quickNode,params);
-    bestCost = quickNode.cost;
-    solvedNodes{end+1} = quickNode;
-    bestNodeInd = length(solvedNodes);
+    % Backward Dynamics (Dynamic Programming)
+    u = DP(out,params);
 end
 
-% Prune or branch
-    if node.cost > bestCost % prune
-        disp(['Pruned at node ', num2str(length(solvedNodes))])
-    else % branch
-        % Find out which variables are already in the allowable set
-        node.inAllowableSet = min(abs(node.u' - repmat(U,[1,timeSteps*2]))) < .001;
+%%
+u = [4;1];
+out = dynamics(u,params)
 
-        % Branch on the first variable not in the allowable set
-        branchingVariable = find(~node.inAllowableSet,1);
-        if isempty(branchingVariable) % Solution that is completely in the allowable set
-            % This is the best cost. If it wasn't we wouldn't be in the
-            % branch part of this if statement
-            bestCost = node.cost;
-            bestNodeInd = length(solvedNodes);
+function u = DP(out,params)
+params.PR;
+dt = 1e-2;
+t = (0:dt:params.finalTime)';
+controlStartTime = 25;
+timeSteps = params.timeSteps;
+controlEndTime = controlStartTime + (timeSteps-1)*params.uDT;
 
-            % Prune nodes whose parent are already worse than this new best
-                % Children nodes will always be worse than their parents
-            if ~isempty(unsolvedNodes)
-                tmp = [unsolvedNodes{:}];
-                unsolvedNodes([tmp.parentCost] > bestCost) = [];
+[~,controlStartInd] = min(abs(controlStartTime-t));
+[~,controlEndInd] = min(abs(controlEndTime-t));
+controlDTInd = params.uDT/dt;
+
+J = NaN(length(params.ptoTorqueOptions(:)),timeSteps);
+decisions = NaN(length(params.ptoTorqueOptions(:)),timeSteps);
+
+% End cost
+J(:,end) = out.thetaDot(controlEndInd)*params.ptoTorqueOptions(:);
+
+% at all torques at this time instant, investigate switching to all torques
+% at the next time instant
+for timeIndCoarse = 1:timeSteps-1
+    timeIndNow = controlEndInd-controlDTInd*timeIndCoarse;
+    for capIndNow = 1:length(params.PR)
+        for rodIndNow = 1:length(params.PR)
+            TorqueIndNow = sub2ind(size(params.ptoTorqueOptions),capIndNow,rodIndNow);
+
+            % Compute the cost of selecting any torque rail for the next time step
+            costTmp = NaN(length(params.ptoTorqueOptions(:)),1);
+            for capIndNext = 1:length(params.PR)
+                for rodIndNext = 1:length(params.PR)
+                    TorqueIndNext = sub2ind(size(params.ptoTorqueOptions),capIndNext,rodIndNext);
+
+                    capSwitchLoss = SwitchingLoss([params.PR(capIndNow);params.PR(capIndNext)],out.theta(timeIndNow),out.thetaDot(timeIndNow),'cap',params.capArea,params.r);
+                    rodSwitchLoss = SwitchingLoss([params.PR(rodIndNow);params.PR(rodIndNext)],out.theta(timeIndNow),out.thetaDot(timeIndNow),'rod',params.rodArea,params.r);
+
+                    % cost of the next state plus the cost to get there
+                    costTmp(TorqueIndNext) = J(TorqueIndNext,end-(timeIndCoarse-1)) + capSwitchLoss + rodSwitchLoss;
+                end
             end
-        else
-        newNodeHigh.ub = node.ub;
-        newNodeHigh.lb = node.lb;
-        newNodeLow = newNodeHigh;
-    % find which index to branch
-        tmp = node.u(branchingVariable) - U;
-        I = find(tmp>0,1,'last');
-        % I and (I+1) are the indices of the discrete input set that we're
-        % bounding on
-        newNodeHigh.lb(branchingVariable) = U(I+1);
-        newNodeLow.ub(branchingVariable) = U(I);
+            % Minimize over the options of torques
+            [cost2go, decisions(TorqueIndNow,end-timeIndCoarse)] = min(costTmp);
 
-        newNodeHigh.parentCost = node.cost;
-        newNodeLow.parentCost = node.cost;
-
-        unsolvedNodes{end+1} = newNodeHigh;
-        unsolvedNodes{end+1} = newNodeLow;
-
+            % Add the cost of going to the next step to the cost of being at
+            % this state now.
+            J(TorqueIndNow,end-timeIndCoarse) = cost2go + out.thetaDot(timeIndNow)*params.ptoTorqueOptions(TorqueIndNow);
         end
     end
-
-iter = iter + 1;
-disp(['Nodes Complete: ',num2str(length(solvedNodes))])
-disp(['Current Unsolved Nodes: ',num2str(length(unsolvedNodes))])
-
-% Check to see if we should stop
-    if isempty(unsolvedNodes)
-        flag = 1;
-        disp('Solution found')
-        bestNode = solvedNodes{bestNodeInd}
-    elseif iter > iterMax
-        flag = -1;
-        disp('Max iterations')
-    end
 end
-toc
-params.plotFigures = 1;
-%%
-tic
-cost = dynamics(solvedNodes{bestNodeInd}.u,params)
-toc
-return
-%%
-params = getParameters;
-U = params.PR'/1e6;
-node = struct;
-timeSteps = 2;
-node.lb = min(U)*ones(timeSteps*2,1);
-node.ub = max(U)*ones(timeSteps*2,1);
 
-node = solveNode(node,params)
-
-tic
-params.plotFigures = 1;
-cost = dynamics(node.u,params);
-toc
-
-function node = solveNode(node,params)
-options = optimoptions('fmincon','PlotFcn','optimplot',OptimalityTolerance=1e-8);
-%options = optimoptions('fmincon');
-A = []; b = [];
-Aeq = []; beq = [];
-lb = node.lb;
-ub = node.ub;
-nonlcon = [];
-u0=0.1*ones(size(lb));
-
-[uOpt,costOpt,exitflag,output] = fmincon(@(u) dynamics(u,params),u0,A,b,Aeq,beq,lb,ub,nonlcon,options);
-node.u = uOpt;
-node.cost = costOpt;
-
-% costOpt
-% variables = [lb uOpt ub]
-% 
-        % params.plotFigures = 1;
-        % cost = dynamics(node.u,params);
-        % drawnow
-        % params.plotFigures = 0;
+% Get decisions back out
+% Start at lowest cost initial torque
+[costOpt,startingTorque] = min(J(:,1));
+torqueIndOpt = NaN(timeSteps,1); capIndOpt = NaN(timeSteps,1); rodIndOpt = NaN(timeSteps,1);
+torqueIndOpt(1) = startingTorque;
+[capIndOpt(1),rodIndOpt(1)] = ind2sub(size(params.ptoTorqueOptions),torqueIndOpt(1));
+for timeIndCoarse = 2:timeSteps
+    torqueIndOpt(timeIndCoarse) = decisions(torqueIndOpt(timeIndCoarse-1),timeIndCoarse-1);
+    [capIndOpt(timeIndCoarse),rodIndOpt(timeIndCoarse)] = ind2sub(size(params.ptoTorqueOptions),torqueIndOpt(timeIndCoarse));
 end
+
+u = params.PR([capIndOpt;rodIndOpt])'/1e6;
+
+end
+
+
+
+
+
+
 
 function params = getParameters(~)
 rho = 1024;
@@ -183,7 +132,7 @@ params.rampTime = 20; % s
 params.sys = sys; params.r=r; params.capArea=capArea; params.rodArea=rodArea;
 end
 
-function cost = dynamics(u_scaled,params)
+function out = dynamics(u_scaled,params)
 dt = 1e-2;
 controlStartTime = 25;
 t = (0:dt:params.finalTime)';
@@ -230,6 +179,13 @@ rodLoss = SwitchingLoss(u_discrete_rod.Data,theta_discrete.Data,thetaDot_discret
 cost = sum(mechPower)*dt + capLoss + rodLoss;
 
 cost = cost/1e6;
+
+% Save to output
+out = struct;
+out.time = t;
+out.theta = theta;
+out.thetaDot = thetaDot;
+out.cost = cost;
 
 
 if params.plotFigures

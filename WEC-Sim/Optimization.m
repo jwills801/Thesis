@@ -84,10 +84,15 @@ elseif length(u0) == 2
 end
 %%
 params.plotFigures = 0;
-lb(1) = max(lb(1),ptoTorqueOptions(1)/1e6); 
-ub(1) = min(ub(1),ptoTorqueOptions(1)/1e6);
+u0 = zeros(50,1);
 
-lb(2) = max(lb(2),ptoTorqueOptions(1)/1e6); 
+lb = min(ptoTorqueOptions(:))*ones(size(u0))/1e6;
+ub = max(ptoTorqueOptions(:))*ones(size(u0))/1e6;
+
+%lb(1) = max(lb(1),ptoTorqueOptions(1)/1e6); 
+%ub(1) = min(ub(1),ptoTorqueOptions(1)/1e6);
+
+%lb(2) = max(lb(2),ptoTorqueOptions(1)/1e6); 
 %ub(2) = min(ub(1),ptoTorqueOptions(1)/1e6);
 
 u0_vals = [min(ptoTorqueOptions(:))/1e6+.1, 0-.01, max(ptoTorqueOptions(:))/1e6-.1];
@@ -102,10 +107,10 @@ for u0_ind = 2%1:length(u0_vals)
 end
 % figure, plot(uOpt_mat)
 % figure, plot(u0_vals,cost_vec)
-%%
+%
 params.plotFigures = 1;
 cost = dynamics(uOpt, params);
-uOpt
+% uOpt
 
 %uPI = 0*uOpt;
 %cost = dynamics(uPI, params)
@@ -113,7 +118,7 @@ uOpt
 %
 %thetaDot = eulerInt(params);
 function cost = dynamics(u_scaled, params)
-dt = 1e-3;
+dt = 1e-2;
 t = (0:dt:50)';
 u = NaN(size(t));
 u_discrete = timeseries([u_scaled;u_scaled(end)]*1e6,(0:params.uDT:params.uDT*(length(u_scaled)))+20);
