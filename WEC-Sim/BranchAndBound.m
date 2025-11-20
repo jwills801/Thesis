@@ -3,7 +3,7 @@ params = getParameters;
 U = params.PR'/1e6;
 unsolvedNodes = {};
 solvedNodes = {};
-timeSteps = 10;
+timeSteps = 6;
 unsolvedNodes{1}.lb = min(U)*ones(timeSteps*2,1);
 unsolvedNodes{1}.ub = max(U)*ones(timeSteps*2,1);
 unsolvedNodes{1}.parentCost = NaN;
@@ -11,15 +11,16 @@ bestCost = 1e3;
 flag = 0;
 iter = 1;
 iterMax = 1000;
+%%
 tic
 while flag == 0
 % take next node to solve
     node = unsolvedNodes{1};
-
+toc
 % solve node
 tic
     node = solveNode(node,params);
-    toc
+toc
 
 % Remove solved node
     unsolvedNodes(1) = [];
@@ -30,6 +31,10 @@ if iter == 1
     [M,I] = min(abs(solvedNodes{1}.u' - repmat(U,[1,timeSteps*2])));
     quickNode.lb = U(I);
     quickNode.ub = U(I);
+
+    quickNode.lb = max(U)*ones(timeSteps*2,1);
+    quickNode.ub = max(U)*ones(timeSteps*2,1);
+
     quickNode.parentCost = solvedNodes{1}.cost;
     quickNode = solveNode(quickNode,params);
     bestCost = quickNode.cost;
@@ -116,26 +121,26 @@ cost = dynamics(node.u,params);
 toc
 
 function node = solveNode(node,params)
-options = optimoptions('fmincon','PlotFcn','optimplot',OptimalityTolerance=1e-8);
-%options = optimoptions('fmincon');
+% options = optimoptions('fmincon','PlotFcn','optimplot',OptimalityTolerance=1e-8);
+options = optimoptions('fmincon');
 A = []; b = [];
 Aeq = []; beq = [];
 lb = node.lb;
 ub = node.ub;
 nonlcon = [];
-u0=0.1*ones(size(lb));
+u0=0*ones(size(lb));
 
 [uOpt,costOpt,exitflag,output] = fmincon(@(u) dynamics(u,params),u0,A,b,Aeq,beq,lb,ub,nonlcon,options);
 node.u = uOpt;
 node.cost = costOpt;
 
-% costOpt
-% variables = [lb uOpt ub]
-% 
-        % params.plotFigures = 1;
-        % cost = dynamics(node.u,params);
-        % drawnow
-        % params.plotFigures = 0;
+costOpt
+variables = [lb uOpt ub]
+
+        params.plotFigures = 1;
+        cost = dynamics(node.u,params);
+        drawnow
+        params.plotFigures = 0;
 end
 
 function params = getParameters(~)
@@ -150,7 +155,8 @@ I = 5.025e6;
 Iinf = 1.734e7;
 x_timeDomain = [1.9754, 1.1345, 7.6921];
 
-PR = [0 8 15]*1e6;
+PR = [0 10]*1e6;
+% PR = [0 8 15]*1e6;
 rodArea = 0.15^2*pi; % m^2: Radius squared times pi
 capArea = 1.5*rodArea; % m^2: Area ratio times rod Area
 r= 1.18; % Moment arm from force to torque
@@ -190,8 +196,11 @@ t = (0:dt:params.finalTime)';
 TorquePTO = NaN(size(t));
 nU = floor(length(u_scaled)/2);
 
-u_scaled_cap = u_scaled(1:nU);
-u_scaled_rod = u_scaled((nU+1:end));
+% u_scaled_cap = u_scaled(1:nU);
+% u_scaled_rod = u_scaled((nU+1:end));
+u_scaled_cap = u_scaled(1:2:end-1);
+u_scaled_rod = u_scaled(2:2:end);
+
 u_discrete_cap = timeseries([u_scaled_cap;u_scaled_cap(end)]*1e6,(0:params.uDT:(params.uDT*nU))+controlStartTime);
 u_discrete_rod = timeseries([u_scaled_rod;u_scaled_rod(end)]*1e6,(0:params.uDT:(params.uDT*nU))+controlStartTime);
 warning('off','MATLAB:linearinter:noextrap'); uCap_zoh = resample(u_discrete_cap,t,'zoh'); uRod_zoh = resample(u_discrete_rod,t,'zoh');
