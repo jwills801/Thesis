@@ -67,6 +67,13 @@ Texc = TexcMag*sin(t*2*pi/params.period).*ramp;
 H = freqresp(params.sys,2*pi/params.period);
 Kp = real(1/H(1)');
 Ki = -2*pi/5*imag(1/H(1)');
+
+% Trajectory
+thetaDotOpt = Texc/2/real(1/H(1));
+thetaOpt = cumtrapz(t,thetaDotOpt);
+thetaDDotOpt = [0;diff(thetaDotOpt)./diff(t)];
+lambda = 1;
+k = 1e-3;
     
 % Simulate
 states = NaN(length(params.sys.A),length(t)); 
@@ -76,7 +83,22 @@ for timeInd = 1:length(t)-1
     % Control
     thetaDot(timeInd) = states(1,timeInd);
     theta(timeInd) = states(2,timeInd);
-    u(timeInd) = -1*(Kp*thetaDot(timeInd) + Ki*theta(timeInd));
+
+
+    % PI control
+        % u(timeInd) = -1*(Kp*thetaDot(timeInd) + Ki*theta(timeInd));
+    
+    % Sliding Mode Contrl
+    thetaError = theta(timeInd)-thetaOpt(timeInd);
+    thetaDotError = thetaDot(timeInd)-thetaDotOpt(timeInd);
+        % Estimate ThetaDDot without u
+    statesDotHat = params.sys.A*states(:,timeInd) + params.sys.B*Texc(timeInd);
+    thetaDDotError = statesDotHat(1) - thetaDDotOpt(timeInd);
+    
+    s = thetaDotError+lambda*thetaError;
+        % Set sdot to -k*sign(s)
+    u(timeInd) = (-thetaDDotError - lambda*thetaDotError - k*sign(s))/params.sys.B(1);
+
 
     % Forward Euler Step
     states(:,timeInd + 1) = states(:,timeInd) + (params.sys.A*states(:,timeInd) + params.sys.B*(u(timeInd)+Texc(timeInd)))*dt;
@@ -97,10 +119,10 @@ powerOpt = TexcMag^2/8/real(1/H(1))
 if params.plotFigures
     figure
     subplot(221), plot(t,u), xlabel('Time [s]'), ylabel('Control Input [Nm]')
-    subplot(222), yyaxis left, plot(t,theta,t,thetaDot), ylabel('[rad] or [rad/s]'), legend('Angular Position','Angular Velocity')
+    subplot(222), yyaxis left, plot(t,thetaDot), ylabel('Angular Velocity [rad/s]')
                yyaxis right,plot(t,Texc), xlabel('Time [s]'), ylabel('Excitaiton Torque [Nm]')
-    subplot(223), plot(t,mechPower), xlabel('Time [s]'), ylabel('Absorbed Power [W]')
-    subplot(224), plot(t,mechEnergy), xlabel('Time [s]'), ylabel('Absorbed Energy [J]')
+    subplot(223), plot(t,thetaDot,'k',t,thetaDotOpt,'k--'), xlabel('Time [s]'), ylabel('Angular Velocity [W]'), legend('Actual','Optimal')
+    subplot(224), plot(t,mechPower), xlabel('Time [s]'), ylabel('Absorbed Energy [J]')
 end
 
 end
