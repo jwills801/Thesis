@@ -54,6 +54,7 @@ if peakWavePeriod == 8  % wave height determined to set available wave power to 
 elseif peakWavePeriod == 20
     waves.period = 20; waves.height = 0.99;
 end
+waves.period = 8; waves.height = 2.5;
 waves.spectrumType = 'PM';              % Specify Spectrum Type
 waves.phaseSeed = 1;
 % waves.direction = [0,30,90];            % Wave Directionality [deg]

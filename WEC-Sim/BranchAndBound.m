@@ -9,91 +9,99 @@ unsolvedNodes{1}.ub = max(U)*ones(timeSteps*2,1);
 unsolvedNodes{1}.parentCost = NaN;
 bestCost = 1e3;
 flag = 0;
-iter = 1;
-iterMax = 1000;
+batch = 1;
+batchMax = 1000;
+parallelCoresAvailable = 10;
 %%
 tic
 while flag == 0
-% take next node to solve
-    node = unsolvedNodes{1};
-toc
-% solve node
-tic
-    node = solveNode(node,params);
-toc
-
-% Remove solved node
-    unsolvedNodes(1) = [];
-    solvedNodes{end+1} = node;
-
-% At the beginning, round to the nearest node to get an integer solution
-if iter == 1
-    [M,I] = min(abs(solvedNodes{1}.u' - repmat(U,[1,timeSteps*2])));
-    quickNode.lb = U(I);
-    quickNode.ub = U(I);
-
-    quickNode.lb = max(U)*ones(timeSteps*2,1);
-    quickNode.ub = max(U)*ones(timeSteps*2,1);
-
-    quickNode.parentCost = solvedNodes{1}.cost;
-    quickNode = solveNode(quickNode,params);
-    bestCost = quickNode.cost;
-    solvedNodes{end+1} = quickNode;
-    bestNodeInd = length(solvedNodes);
-end
-
-% Prune or branch
-    if node.cost > bestCost % prune
-        disp(['Pruned at node ', num2str(length(solvedNodes))])
-    else % branch
-        % Find out which variables are already in the allowable set
-        node.inAllowableSet = min(abs(node.u' - repmat(U,[1,timeSteps*2]))) < .001;
-
-        % Branch on the first variable not in the allowable set
-        branchingVariable = find(~node.inAllowableSet,1);
-        if isempty(branchingVariable) % Solution that is completely in the allowable set
-            % This is the best cost. If it wasn't we wouldn't be in the
-            % branch part of this if statement
-            bestCost = node.cost;
-            bestNodeInd = length(solvedNodes);
-
-            % Prune nodes whose parent are already worse than this new best
-                % Children nodes will always be worse than their parents
-            if ~isempty(unsolvedNodes)
-                tmp = [unsolvedNodes{:}];
-                unsolvedNodes([tmp.parentCost] > bestCost) = [];
-            end
-        else
-        newNodeHigh.ub = node.ub;
-        newNodeHigh.lb = node.lb;
-        newNodeLow = newNodeHigh;
-    % find which index to branch
-        tmp = node.u(branchingVariable) - U;
-        I = find(tmp>0,1,'last');
-        % I and (I+1) are the indices of the discrete input set that we're
-        % bounding on
-        newNodeHigh.lb(branchingVariable) = U(I+1);
-        newNodeLow.ub(branchingVariable) = U(I);
-
-        newNodeHigh.parentCost = node.cost;
-        newNodeLow.parentCost = node.cost;
-
-        unsolvedNodes{end+1} = newNodeHigh;
-        unsolvedNodes{end+1} = newNodeLow;
-
-        end
+    no_parallelCores = min(length(unsolvedNodes),parallelCoresAvailable);
+    parallelCores = unsolvedNodes(1:no_parallelCores);
+    
+    % Solve the NLP at each node in parallel
+    parpool(no_parallelCores)
+    parfor coreInd = 1:no_parallelCores
+        % solve node        
+        parallelCores{coreInd} = solveNode(parallelCores{coreInd},params);
     end
+    
+    % branch and prune seperate from parallel loop (do in series)
+    for coreInd = 1:no_parallelCores
+        node = parallelCores{coreInd}; % This is a solved node
 
-iter = iter + 1;
-disp(['Nodes Complete: ',num2str(length(solvedNodes))])
-disp(['Current Unsolved Nodes: ',num2str(length(unsolvedNodes))])
+        % store solved node and remove from to do list
+        unsolvedNodes(1) = [];
+        solvedNodes{end+1} = node;
 
-% Check to see if we should stop
+        % At the beginning, round to the nearest node to get an integer solution
+        if batch == 1
+            [M,I] = min(abs(solvedNodes{1}.u' - repmat(U,[1,timeSteps*2])));
+            quickNode.lb = U(I);
+            quickNode.ub = U(I);
+
+            quickNode.lb = max(U)*ones(timeSteps*2,1);
+            quickNode.ub = max(U)*ones(timeSteps*2,1);
+
+            quickNode.parentCost = solvedNodes{1}.cost;
+            quickNode = solveNode(quickNode,params);
+            bestCost = quickNode.cost;
+            solvedNodes{end+1} = quickNode;
+            bestNodeInd = length(solvedNodes);
+        end
+
+        % Prune or branch
+        if node.cost > bestCost % prune
+            disp(['Pruned at node ', num2str(length(solvedNodes))])
+        else % branch
+            % Find out which variables are already in the allowable set
+            node.inAllowableSet = min(abs(node.u' - repmat(U,[1,timeSteps*2]))) < .001;
+
+            % Branch on the first variable not in the allowable set
+            branchingVariable = find(~node.inAllowableSet,1);
+            if isempty(branchingVariable) % Solution that is completely in the allowable set
+                % This is the best cost. If it wasn't we wouldn't be in the
+                % branch part of this if statement
+                bestCost = node.cost;
+                bestNodeInd = length(solvedNodes);
+
+                % Prune nodes whose parent are already worse than this new best
+                % Children nodes will always be worse than their parents
+                if ~isempty(unsolvedNodes)
+                    tmp = [unsolvedNodes{:}];
+                    unsolvedNodes([tmp.parentCost] > bestCost) = [];
+                end
+            else
+                newNodeHigh.ub = node.ub;
+                newNodeHigh.lb = node.lb;
+                newNodeLow = newNodeHigh;
+                % find which index to branch
+                tmp = node.u(branchingVariable) - U;
+                I = find(tmp>0,1,'last');
+                % I and (I+1) are the indices of the discrete input set that we're
+                % bounding on
+                newNodeHigh.lb(branchingVariable) = U(I+1);
+                newNodeLow.ub(branchingVariable) = U(I);
+
+                newNodeHigh.parentCost = node.cost;
+                newNodeLow.parentCost = node.cost;
+
+                unsolvedNodes{end+1} = newNodeHigh;
+                unsolvedNodes{end+1} = newNodeLow;
+
+            end
+        end % prune or branch if loop
+    end % Looping over each node in this batch
+
+    batch = batch + 1;
+    disp(['Nodes Complete: ',num2str(length(solvedNodes))])
+    disp(['Current Unsolved Nodes: ',num2str(length(unsolvedNodes))])
+
+    % Check to see if we should stop
     if isempty(unsolvedNodes)
         flag = 1;
         disp('Solution found')
         bestNode = solvedNodes{bestNodeInd}
-    elseif iter > iterMax
+    elseif batch > batchMax
         flag = -1;
         disp('Max iterations')
     end
@@ -133,14 +141,6 @@ u0=0*ones(size(lb));
 [uOpt,costOpt,exitflag,output] = fmincon(@(u) dynamics(u,params),u0,A,b,Aeq,beq,lb,ub,nonlcon,options);
 node.u = uOpt;
 node.cost = costOpt;
-
-costOpt
-variables = [lb uOpt ub]
-
-        params.plotFigures = 1;
-        cost = dynamics(node.u,params);
-        drawnow
-        params.plotFigures = 0;
 end
 
 function params = getParameters(~)
