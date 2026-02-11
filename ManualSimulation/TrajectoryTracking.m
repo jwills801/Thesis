@@ -45,7 +45,7 @@ params = struct;
 params.plotFigures = 1;
 params.finalTime = 100;
 params.sys = sys;
-params.controlInputSet = ptoTorqueOptions;
+params.controlInputSet = ptoTorqueOptions(:);
 
 % Excitation
 params.period = 5; % s
@@ -73,7 +73,7 @@ thetaDotOpt = Texc/2/real(1/H(1));
 thetaOpt = cumtrapz(t,thetaDotOpt);
 thetaDDotOpt = [0;diff(thetaDotOpt)./diff(t)];
 lambda = 1;
-k = 1e-3;
+k = 1e-5;
     
 % Simulate
 states = NaN(length(params.sys.A),length(t)); 
@@ -98,6 +98,30 @@ for timeInd = 1:length(t)-1
     s = thetaDotError+lambda*thetaError;
         % Set sdot to -k*sign(s)
     u(timeInd) = (-thetaDDotError - lambda*thetaDotError - k*sign(s))/params.sys.B(1);
+    
+    % Select closest force 
+    % [~,controlInd] = min(abs(params.controlInputSet-u(timeInd)));
+    % u(timeInd) = params.controlInputSet(controlInd);
+
+    
+    if s > 0
+        % Pick the largest control option still smaller than u
+        smallerOptions = params.controlInputSet(find(params.controlInputSet<=u(timeInd)));
+        if ~isempty(smallerOptions)
+            u(timeInd) = max(smallerOptions);
+        else
+            u(timeInd) = min(params.controlInputSet);
+        end
+    else
+        % Pick the smallest option still larger than u
+        largerOptions = params.controlInputSet(find(params.controlInputSet>=u(timeInd)));
+        if ~isempty(largerOptions)
+            u(timeInd) = min(largerOptions);
+        else
+            u(timeInd) = max(params.controlInputSet);
+        end
+ 
+    end
 
 
     % Forward Euler Step
@@ -114,7 +138,9 @@ mechEnergy = cumtrapz(t,mechPower);
 avePow = trapz(t(rampStartInd:end),mechPower(rampStartInd:end))/(params.finalTime-params.rampTime)
 
 % Theoretical max
-powerOpt = TexcMag^2/8/real(1/H(1))
+avePowOpt = TexcMag^2/8/real(1/H(1))
+
+disp([num2str((avePowOpt-avePow)/avePowOpt*100),'% from optimal'])
 
 if params.plotFigures
     figure
