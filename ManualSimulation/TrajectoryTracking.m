@@ -23,7 +23,7 @@ Iinf = 1.734e7;
 x_timeDomain = [1.9754, 1.1345, 7.6921];
 
 % Set Valued Control Inputs
-PressureRails = [0 35]*1e6;
+PressureRails = [0 30]*1e6;
 rodArea = 0.15^2*pi; % m^2: Radius squared times pi
 capArea = 1.5*rodArea; % m^2: Area ratio times rod Area
 r= 1.18; % Moment arm from force to torque
