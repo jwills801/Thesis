@@ -23,7 +23,7 @@ Iinf = 1.734e7;
 x_timeDomain = [1.9754, 1.1345, 7.6921];
 
 % Set Valued Control Inputs
-PressureRails = [0 30]*1e6;
+PressureRails = [0 10 20 30 40]*1e6;
 rodArea = 0.15^2*pi; % m^2: Radius squared times pi
 capArea = 1.5*rodArea; % m^2: Area ratio times rod Area
 r= 1.18; % Moment arm from force to torque
@@ -37,7 +37,7 @@ A = [0,            -Khs/(I+Iinf),0,-1/(I+Iinf);...
     1,               0, 0,        0;...
     0,               0, 0, -x_timeDomain(1);...
 x_timeDomain(3)*1e7, 0, 1, -x_timeDomain(2)];
-B = [1/(I+Iinf);0;0;0]; C = [1,0,0,0;0,1,0,0];
+B = [1/(I+Iinf);0;0;0]; C = [1,0,0,0];
 sys = ss(A,B,C,0);
 
 % Output
@@ -58,14 +58,28 @@ dt = 1e-3;
 t = (0:dt:params.finalTime)';
 
 % Control sampling rate
-controlDt = 2e-1;  % Control sampling period
+controlDt = 2e-3;  % Control sampling period
 controlSampleRate = round(controlDt/dt);  % Update every N simulation steps 
 
 % Excitation
-TexcMag = 2e6;
+% Regular Waves
+% TexcMag = 2e6;
+% [~,rampStartInd] = min(abs(t-params.rampTime));
+% ramp = 0.5*(1+cos(pi+pi*t/params.rampTime)).*(t<params.rampTime) + (t>=params.rampTime);
+% Texc = TexcMag*sin(t*2*pi/params.period).*ramp;
+
+% Irregular Waves
+Tp = params.period;
+Hs = 3;
+rampTime = params.rampTime;
+finalTime = params.finalTime;
+irregWaves = IrregularWaves(Tp,Hs,rampTime,params.finalTime,dt);
+Texc = irregWaves.Texc;
 [~,rampStartInd] = min(abs(t-params.rampTime));
-ramp = 0.5*(1+cos(pi+pi*t/params.rampTime)).*(t<params.rampTime) + (t>=params.rampTime);
-Texc = TexcMag*sin(t*2*pi/params.period).*ramp;
+
+Z = freqresp(params.sys,irregWaves.waveInfo.omega);
+Rr = real(1./squeeze(Z))';
+avePowOpt = trapz(irregWaves.waveInfo.omega,abs(irregWaves.F).^2.*irregWaves.waveInfo.spectrum/8./Rr)
 
 % PI control
 H = freqresp(params.sys,2*pi/params.period);
@@ -92,9 +106,6 @@ for timeInd = 1:length(t)-1
 
     % Update control input at slower rate
     if mod(timeInd, controlSampleRate) == 0 || timeInd == 1
-
-        % PI control
-        % u(timeInd) = -1*(Kp*thetaDot(timeInd) + Ki*theta(timeInd));
 
         % Sliding Mode Contrl
         thetaError = theta(timeInd)-thetaOpt(timeInd);
@@ -143,6 +154,9 @@ for timeInd = 1:length(t)-1
     end
 
 
+    % PI control
+        % u(timeInd) = -1*(Kp*thetaDot(timeInd) + Ki*theta(timeInd));
+
     % Forward Euler Step
     states(:,timeInd + 1) = states(:,timeInd) + (params.sys.A*states(:,timeInd) + params.sys.B*(u(timeInd)+Texc(timeInd)))*dt;
 end
@@ -158,7 +172,7 @@ mechEnergy = cumtrapz(t,mechPower);
 avePow = trapz(t(rampStartInd:end),mechPower(rampStartInd:end))/(params.finalTime-params.rampTime)
 
 % Theoretical max
-avePowOpt = TexcMag^2/8/real(1/H(1))
+% avePowOpt = 0; % TexcMag^2/8/real(1/H(1))
 
 disp([num2str((avePowOpt-avePow)/avePowOpt*100),'% from optimal'])
 

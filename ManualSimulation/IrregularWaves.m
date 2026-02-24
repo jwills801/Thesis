@@ -70,6 +70,7 @@ out = struct();
 out.time = time;
 out.Texc = torqueExcitation;
 out.waveInfo = waves;
+out.F = F;
 end
 
 function out = Spectrum(Tp,Hs)
