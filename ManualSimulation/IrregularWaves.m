@@ -63,7 +63,7 @@ F = transpose((ex_re+ex_im*1i)) * rho*g;
 torqueExcitation = ramp.* real(sum( exp(1i*(time*waves.omega+phase)) .* (F.*sqrt(2*waves.spectrum.*dw)) ,2));
 
 % Plot Torque
-figure, plot(time,torqueExcitation)
+    % figure, plot(time,torqueExcitation)
 
 % Output results
 out = struct();

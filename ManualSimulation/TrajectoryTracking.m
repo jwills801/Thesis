@@ -23,8 +23,8 @@ Iinf = 1.734e7;
 x_timeDomain = [1.9754, 1.1345, 7.6921];
 
 % Set Valued Control Inputs
-PressureRails = [0 10 20 30 40]*1e6;
-rodArea = 0.15^2*pi; % m^2: Radius squared times pi
+PressureRails = [0 30]*1e6;
+rodArea = 0.2^2*pi; % m^2: Radius squared times pi
 capArea = 1.5*rodArea; % m^2: Area ratio times rod Area
 r= 1.18; % Moment arm from force to torque
 capTorqueOptions = PressureRails*capArea*r;
@@ -43,13 +43,13 @@ sys = ss(A,B,C,0);
 % Output
 params = struct;
 params.plotFigures = 1;
-params.finalTime = 50;
+params.finalTime = 500;
 params.sys = sys;
 params.controlInputSet = ptoTorqueOptions(:);
 
 % Excitation
-params.period = 5; % s
-params.rampTime = 20; % s
+params.period = 10; % s
+params.rampTime = 1e-3; % s
 end
 
 function mechPower = dynamics(params)
@@ -58,7 +58,7 @@ dt = 1e-3;
 t = (0:dt:params.finalTime)';
 
 % Control sampling rate
-controlDt = 2e-3;  % Control sampling period
+controlDt = 2e-1;  % Control sampling period
 controlSampleRate = round(controlDt/dt);  % Update every N simulation steps 
 
 % Excitation
@@ -70,16 +70,16 @@ controlSampleRate = round(controlDt/dt);  % Update every N simulation steps
 
 % Irregular Waves
 Tp = params.period;
-Hs = 3;
+Hs = 1;
 rampTime = params.rampTime;
 finalTime = params.finalTime;
-irregWaves = IrregularWaves(Tp,Hs,rampTime,params.finalTime,dt);
+irregWaves = IrregularWaves(Tp,Hs,rampTime,finalTime,dt);
 Texc = irregWaves.Texc;
 [~,rampStartInd] = min(abs(t-params.rampTime));
 
 Z = freqresp(params.sys,irregWaves.waveInfo.omega);
 Rr = real(1./squeeze(Z))';
-avePowOpt = trapz(irregWaves.waveInfo.omega,abs(irregWaves.F).^2.*irregWaves.waveInfo.spectrum/8./Rr)
+avePowOpt = trapz(irregWaves.waveInfo.omega,abs(irregWaves.F).^2.*irregWaves.waveInfo.spectrum*2/8./Rr)
 
 % PI control
 H = freqresp(params.sys,2*pi/params.period);
@@ -87,7 +87,17 @@ Kp = real(1/H(1)');
 Ki = -2*pi/5*imag(1/H(1)');
 
 % Trajectory
-thetaDotOpt = Texc/2/real(1/H(1));
+ramp = .5*(1+cos(pi + pi/rampTime*t)).*(t<rampTime) + (t>=rampTime);
+rng(1) % Sets random seed for repeatability
+phase = 2*pi*rand(size(irregWaves.waveInfo.omega));
+dw = [0,diff(irregWaves.waveInfo.omega)];
+
+thetaDotOpt = ramp.* real(sum( exp(1i*(t*irregWaves.waveInfo.omega+phase)) .* ...
+    (irregWaves.F/2./Rr.*sqrt(2*irregWaves.waveInfo.spectrum.*dw)) ,2));
+
+figure, plot(t,thetaDotOpt)
+
+% thetaDotOpt = Texc/2/real(1/H(1));
 thetaOpt = cumtrapz(t,thetaDotOpt);
 thetaDDotOpt = [0;diff(thetaDotOpt)./diff(t)];
 lambda = 1;
@@ -168,6 +178,7 @@ u(timeInd+1) = u(timeInd);
     
 % Absorbed Power
 mechPower = -u.*thetaDot;
+figure, plot(t,cumtrapz(mechPower))
 mechEnergy = cumtrapz(t,mechPower);
 avePow = trapz(t(rampStartInd:end),mechPower(rampStartInd:end))/(params.finalTime-params.rampTime)
 
