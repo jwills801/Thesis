@@ -1,4 +1,4 @@
-
+clear, close all
 tic
 params = getParameters;
 cost = dynamics(params);
@@ -184,6 +184,13 @@ avePow = trapz(t(rampStartInd:end),mechPower(rampStartInd:end))/(params.finalTim
 
 % Theoretical max
 % avePowOpt = 0; % TexcMag^2/8/real(1/H(1))
+
+% Count switching events
+switchInds = find(diff(u) ~= 0) + 1;  % +1 to get the index of the new value
+switchRate = length(switchInds)/finalTime
+
+
+%% Displace results
 
 disp([num2str((avePowOpt-avePow)/avePowOpt*100),'% from optimal'])
 

@@ -102,7 +102,7 @@ spectrum = fSpectrum./(2*pi);
 power = CalculateWavePower(spectrum,omegaVals);
 
 % Plot spectrum
-figure, semilogx(f,fSpectrum), grid, xlabel('Frequency [Hz]'), ylabel('Spectrum [m^2/Hz]')
+% figure, semilogx(f,fSpectrum), grid, xlabel('Frequency [Hz]'), ylabel('Spectrum [m^2/Hz]')
 
 % output values
 out = struct();
