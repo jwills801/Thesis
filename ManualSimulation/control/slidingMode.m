@@ -1,23 +1,4 @@
-function out = dynamics(params)
-% Time
-dt = 1e-2;
-t = (0:dt:params.finalTime)';
-
-% Control Horizon
-controlHorizon = 2e-1;
-
-% How many simulation time steps are there in a control horizon
-HorizonSampling = round(controlHorizon/dt);  % Update every N simulation steps 
-
-    
-% Simulate
-states = NaN(length(params.sys.A),length(t)); 
-u = NaN(1,length(t)); u(1) = 0;
-states(:,1) = zeros(length(params.sys.A),1);
-
-waitbarObj = waitbar(0,'Simulating WEC Dynamics');
-for timeInd = 1:length(t)-1
-    waitbar(timeInd/length(t),waitbarObj);
+function out = slidingMode(params,optTraj,states,timeInd)
 
     thetaDot(timeInd) = states(1,timeInd);
     theta(timeInd) = states(2,timeInd);
@@ -30,10 +11,10 @@ for timeInd = 1:length(t)-1
     statesDotHat = params.sys.A*states(:,timeInd) + params.sys.B*Texc(timeInd);
     thetaDDotError = statesDotHat(1) - thetaDDotOpt(timeInd);
 
-    s(timeInd) = thetaDotError+lambda*thetaError;
+    s = thetaDotError+lambda*thetaError;
 
     % if s is large, recalulate control input
-    if abs(s(timeInd)) > phi || timeInd == 1
+    if abs(s) > phi || timeInd == 1
         % Horizon indices
         hInds = (timeInd:min((timeInd+HorizonSampling-1),length(t)));
 

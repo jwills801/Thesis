@@ -1,13 +1,13 @@
-function out = MakeSwitchingLossMap(params)
+function out = makeSwitchLossMap(params)
 
 % This code will make a tabulated grid of points 
 % which can be interpolated between to find the energy loss
 tic
 %% Parameters
-capArea = params.capArea;
+capArea = params.hyd.capArea;
 hoseVolume = 0.1^2*pi*5; % m^3: Radius of hose squared times pi times length of the hose
-stroke = params.stroke;
-PR = params.PR;
+stroke = params.hyd.stroke;
+PR = params.hyd.pressureRails;
 
 % Fluid properties
 beta = 1.8e9; % Pa: bulk modulus
@@ -119,6 +119,7 @@ out.valveConstant = valveConstant;
 out.velA_vals = velA_vals;
 out.vol_vals = vol_vals;
 out.PR = PR;
+switchMap.finalTime = finalTime;
 end
 
 
