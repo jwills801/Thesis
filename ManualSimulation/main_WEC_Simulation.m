@@ -19,13 +19,11 @@
         % timeLoop.m
         % advanceStep.m
     % evaluation/                           # Package for loss analysis
-        % analyzeValves.m
-        % calculateKinematics.m
-        % findEvents.m
+        % evaluate.m
+        % makeSwitchLossMap.m
+        % getValveLoss.m
     % plotting/                       # Package for visualization
         % plotAll.m
-        % plotControl.m
-        % plotLosses.m
 
 
 clear, close all
@@ -40,17 +38,17 @@ wave = generateExcitingTorque(params);
 
 % Initialize control
 addpath("control/")
-optTraj = getOptimal(params,wave);
+ctrl = getControl(params,wave);
 
 % Simulate Dynamics
 addpath("dynamics/")
-dyn = timeLoop(params,wave,optTraj);
+dyn = timeLoop(params,wave,ctrl);
 
-% Evaluate
+%% Evaluate
 addpath("evaluation/")
 eval = evaluate(params,dyn);
 
 %% Plot
 addpath("plotting/")
-plotting(params,wave,optTraj,dyn,eval);
+plotAll(params,wave,ctrl,dyn,eval);
 

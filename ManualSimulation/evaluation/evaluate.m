@@ -1,8 +1,9 @@
 function eval = evaluate(params,dyn)
     
     % load or calculate switching losses
-    % switchMap = makeSwitchLossMap(params);
-    load("SwitchMap.mat")
+    switchMap = makeSwitchLossMap(params);
+    %     save("evaluation/SwitchMap.mat","switchMap")
+    % load("SwitchMap.mat")
 
     % Calculate switching losses
     eval = getValveLoss(params,dyn,switchMap);

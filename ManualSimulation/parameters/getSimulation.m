@@ -1,11 +1,11 @@
 function simu = getSimulation(~)
 
-simu.finalTime = 50;
+simu.finalTime = 100;
 simu.dt = 1e-2;
-simu.rampTime = 10; % s
+simu.rampTime = 50; % s
 simu.time = (0:simu.dt:simu.finalTime)';
 
-simu.peakPeriod = 10; % s
-simu.sigWaveHeight = 4; % [m]
+simu.peakPeriod = 8; % s
+simu.sigWaveHeight = 2.5; % [m]
 
 end

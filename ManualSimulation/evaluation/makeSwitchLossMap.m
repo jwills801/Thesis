@@ -11,7 +11,7 @@ PR = params.hyd.pressureRails;
 
 % Fluid properties
 beta = 1.8e9; % Pa: bulk modulus
-alpha = .03; % Percent entrained air
+alpha = 0;% .03; % Percent entrained air
 
 % Precompute hydraulic effort vectors
 p0 = 101325; % Pa, atmospheric
@@ -19,7 +19,7 @@ HydraulicEffort = hydraulic_effort(beta,alpha);
 
 % Valve constants
     % set valve constant k: Q = k*sqrt(deltaP)
-valveConstant = 1*capArea/sqrt(5e6); % m^3/s/Pa: Speed of cylinder times area divided by sqrt of allowed pressure drop
+valveConstant = 1*capArea/sqrt(2e6); % m^3/s/Pa: Speed of cylinder times area divided by sqrt of allowed pressure drop
 valveDampingRatio = 0.7;
 valveNaturalFrequency = 25*2*pi; % 25 Hz, 25*2*pi rad/s - takes about 20 ms to open
 valveTF = tf(valveNaturalFrequency^2,[1,2*valveNaturalFrequency*valveDampingRatio,valveNaturalFrequency^2]);
@@ -63,7 +63,7 @@ for m = 1:length(vol_vals)
                     % Loop over delay values
                     % Initialize loss vector for each delay
                     Eloss_delay(:) = NaN;
-                    for ii = 1:length(delayvals)
+                    for ii = 4% 1:length(delayvals)
                         delay = round(delayvals(ii));
 
                         % Get valve trajectories
@@ -76,6 +76,9 @@ for m = 1:length(vol_vals)
                         xoff((find(xoff<0,1)):end) = 0;
                         xon((find(xon>1,1)):end) = 1;
 
+                        % Calculate volume
+                        vol = vol_vals(m) - velA_vals(i)*cumsum(dt*ones(1,length(tspan)-1));
+
                         % Simulate pressure dynamics
                         % Initialize vectors
                         PA = NaN(size(tspan')); Q_C = NaN(length(tspan)-1,1); Q_O = NaN(length(tspan)-1,1);
@@ -85,11 +88,13 @@ for m = 1:length(vol_vals)
                             Q_O(kk) = valveConstant*xon(kk)*sign(PR(k)-PA(kk)).*sqrt(abs(PR(k)-PA(kk))); % Oriface equation for opening valve
                             [beta_mix, ~, ~] = oil_comp(PA(kk)+p0, alpha, beta); % Effective bulk modulus
                             %beta_mix = beta_oil;
-                            PA(kk+1) = PA(kk) + beta_mix/vol_vals(i)*(Q_C(kk)+Q_O(kk)-velA_vals(i))*dt; % Compressibility -> expression for dPdt
+                            % PA(kk+1) = PA(kk) + beta_mix/vol_vals(m)*(Q_C(kk)+Q_O(kk)-velA_vals(i))*dt; % Compressibility -> expression for dPdt
+                            PA(kk+1) = PA(kk) + beta_mix/vol(kk)*(Q_C(kk)+Q_O(kk)-velA_vals(i))*dt; % Compressibility -> expression for dPdt
                         end
                         % calculate losses
                         % Loss_h = Q_C.*(PR(j)-PA(1:length(tspan)-1));
                         % Loss_l = Q_O.*(PR(k)-PA(1:length(tspan)-1));
+
                         phi_h = interp1(HydraulicEffort.Pvals,HydraulicEffort.phivals,PR(j)+p0);
                         PA_sat = PA(1:length(tspan)-1); PA_sat(PA_sat<min(HydraulicEffort.Pvals)) = min(HydraulicEffort.Pvals); % Hydraulic effort function only goes so low in pressure
                         phi_A = interp1(HydraulicEffort.Pvals,HydraulicEffort.phivals,PA_sat(1:length(tspan)-1)+p0);
@@ -97,11 +102,14 @@ for m = 1:length(vol_vals)
                         Loss_h = Q_C.*(phi_h-phi_A);
                         Loss_l = Q_O.*(phi_l-phi_A);
                         Eloss_delay(ii) =  sum(Loss_h+Loss_l)*dt;
-                        % if m == 1 && i == 1 && j == 2 && k == 3
-                        %     figure, title(['Delay value: ',num2str(delay)])
-                        %     subplot(121), plot(tspan,PA)
-                        %     subplot(122), plot(tspan,xon,tspan,xoff)
-                        % end
+                        if 0%m == 1 && i == 5 && j == 2 && k == 3 && ii == 4
+                            figure, title(['Delay value: ',num2str(delay)])
+                            subplot(121), plot(tspan,PA)
+                            subplot(122), plot(tspan,xon,tspan,xoff)
+
+                            figure, plot(tspan(1:end-1),Loss_h,tspan(1:end-1),Loss_l), legend('Closing','Opening')
+                            min(Eloss_delay)
+                        end
                     end
                     [Eloss(j,k,i,m), delaychosen(j,k,i,m)] = min(Eloss_delay);
                 end
@@ -119,7 +127,8 @@ out.valveConstant = valveConstant;
 out.velA_vals = velA_vals;
 out.vol_vals = vol_vals;
 out.PR = PR;
-switchMap.finalTime = finalTime;
+out.finalTime = finalTime;
+out.hoseVolume = hoseVolume;
 end
 
 

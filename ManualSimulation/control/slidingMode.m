@@ -1,106 +1,113 @@
-function out = slidingMode(params,optTraj,states,timeInd)
+function out = slidingMode(params,ctrl,wave,states,uInd_history)
+% uInd_history is a vectory of the previous control inputs
 
-    thetaDot(timeInd) = states(1,timeInd);
-    theta(timeInd) = states(2,timeInd);
-
-    % Sliding Mode Contrl
-    thetaError = theta(timeInd)-thetaOpt(timeInd);
-    thetaDotError = thetaDot(timeInd)-thetaDotOpt(timeInd);
-
-    % Estimate ThetaDDot without u
-    statesDotHat = params.sys.A*states(:,timeInd) + params.sys.B*Texc(timeInd);
-    thetaDDotError = statesDotHat(1) - thetaDDotOpt(timeInd);
-
-    s = thetaDotError+lambda*thetaError;
-
-    % if s is large, recalulate control input
-    if abs(s) > phi || timeInd == 1
-        % Horizon indices
-        hInds = (timeInd:min((timeInd+HorizonSampling-1),length(t)));
-
-        xStar = [thetaOpt(hInds),thetaDotOpt(hInds),zeros(length(hInds),2)];
-
-        lastSwitchInd = max([find(diff(u(1:max(timeInd-1,1)))~=0,1,'last'),1]);
-        timeSinceLastSwitch = t(timeInd)-t(lastSwitchInd);
-        previousInput = find(u(lastSwitchInd+1)==params.controlInputSet(:));
-        J = 1*exp(-10*timeSinceLastSwitch) * ones(size(params.controlInputSet(:)));
-        J(previousInput) = 0;
-
-        % Simulate future times for each control input
-        for uInd = 1:length(params.controlInputSet(:))
-
-            % Control inputs:
-            uOption = params.controlInputSet(uInd);
-
-            xHat = lsim(params.sys,uOption+Texc(hInds),t(hInds),states(:,timeInd));
-
-            S = (xHat - xStar)*[1; lambda; 0; 0];
-
-            % J(uInd) = J(uInd) + sum(S.^2);
-            J(uInd) = J(uInd) + abs(S(end));
-        end
-        [~,uOptInd] = min(J);
-   
-        u(timeInd) = params.controlInputSet(uOptInd);
+% Calculate the amount of time since the last switch
+timeInd = length(uInd_history)+1;
+lastSwitchInd = find(diff(uInd_history)~=0,1,'last');
+    if isempty(lastSwitchInd)
+        timeSinceSwitch = 10;
+        uInd_history = 1;
+    else
+        timeSinceSwitch = params.simu.time(timeInd) - params.simu.time(lastSwitchInd);
+    end
 
 
-    else % If s is small, use previous control input
-        u(timeInd) = u(timeInd-1);
-    end % if statement on size of s
+% Get position and velocity
+thetaDot = states(1);
+theta = states(2);
 
-    % PI control
-    % u(timeInd) = -1*(Kp*thetaDot(timeInd) + Ki*theta(timeInd));
+% Get torque options
+ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
 
-    % Forward Euler Step
-    % states(:,timeInd + 1) = states(:,timeInd) + (params.sys.A*states(:,timeInd) + params.sys.B*(u(timeInd)+Texc(timeInd)))*dt;
-    
-    % Forward with lsim
-    stepInds = [timeInd,timeInd+1];
-    statesMany = lsim(params.sys,u(timeInd)+Texc(stepInds),t(stepInds),states(:,timeInd));
-    states(:,timeInd + 1) = statesMany(end,:);
-end
-close(waitbarObj)
+% Sliding Mode Contrl
+thetaError = theta-ctrl.optTraj.theta(timeInd);
+thetaDotError = thetaDot-ctrl.optTraj.thetaDot(timeInd);
+s = thetaDotError+ctrl.lambda*thetaError;
 
-% For the last time step
-thetaDot(timeInd+1) = states(1,timeInd+1);
-theta(timeInd+1) = states(2,timeInd+1);
-u(timeInd+1) = u(timeInd);
-    
-% Absorbed Power
-mechPower = -u.*thetaDot;
-figure, plot(t,cumtrapz(mechPower))
-mechEnergy = cumtrapz(t,mechPower);
-avePow = trapz(t(rampStartInd:end),mechPower(rampStartInd:end))/(params.finalTime-params.rampTime)
+% Precompute Transition Matrices
+[M,H] = getTransition(params,ctrl.horizonInd);
 
-% Theoretical max
-% avePowOpt = 0; % TexcMag^2/8/real(1/H(1))
+% pad vectors so we can simulate past the official time vector
+thetaOpt = [ctrl.optTraj.theta;zeros(ctrl.horizonInd,1)];
+thetaDotOpt = [ctrl.optTraj.thetaDot;zeros(ctrl.horizonInd,1)];
+Texc = [wave.torque.Texc;zeros(ctrl.horizonInd,1)];
 
-% Count switching events
-switchInds = find(diff(u) ~= 0) + 1;  % +1 to get the index of the new value
-switchRate = length(switchInds)/finalTime
+% if s is large, recalulate control input
+if abs(s) > ctrl.phi || timeInd == 1
+    % Horizon indices
+    hInds = (timeInd:(timeInd+ctrl.horizonInd-1));
 
-%% Output
-out = struct();
-out.u = u;
-out.t = t;
-out.theta = theta;
-out.thetaDot = thetaDot;
-out.optimalAvergePower = avePowOpt;
-out.averagePower = avePow;
-out.mechanicalPower = mechPower;
-out.switchRate = switchRate;
+    % Desired States (we dont care about what happens with the rad states
+    xStar = [thetaDotOpt(hInds),thetaOpt(hInds),zeros(length(hInds),2)];
 
-%% Display results
+    % Initialize cost vector
+    J = exp(-10*timeSinceSwitch) * ones(size(ptoTorqueOptions));
+    J(uInd_history(end)) = 0;
 
-disp([num2str((avePowOpt-avePow)/avePowOpt*100),'% from optimal'])
+    % Simulate future times for each control input
+    for uInd = 1:length(ptoTorqueOptions)
+        % Control inputs:
+        uOption = ptoTorqueOptions(uInd);
+        
+        % simulate this control action over the time horizon
+        xHat_stacked = M*states + H*(uOption+Texc(hInds));
+        xHat = reshape(xHat_stacked,size(xStar,2),size(xStar,1))';
 
-if params.plotFigures
-    figure
-    subplot(221), plot(t,u), xlabel('Time [s]'), ylabel('Control Input [Nm]'), grid
-    subplot(222), yyaxis left, plot(t,thetaDot), ylabel('Angular Velocity [rad/s]'), grid
-               yyaxis right,plot(t,Texc), xlabel('Time [s]'), ylabel('Excitaiton Torque [Nm]')
-    subplot(223), plot(t,thetaDot,'k',t,thetaDotOpt,'k--'), xlabel('Time [s]'), ylabel('Angular Velocity [W]'), legend('Actual','Optimal'), grid
-    subplot(224), plot(t,[0,s]), xlabel('Time [s]'), ylabel('Sliding Surface'), grid
+        S = (xHat - xStar)*[1; ctrl.lambda; 0; 0];
+
+        % J(uInd) = J(uInd) + sum(S.^2);
+        J(uInd) = J(uInd) + abs(S(end));
+    end
+    [~,uOptInd] = min(J);
+else
+    uOptInd = uInd_history(end);
 end
 
+% Output 
+out.controlValue = ptoTorqueOptions(uOptInd);
+out.controlIndex = uOptInd;
+end
+
+function [M,H] = getTransition(params,N)
+
+Phi = eye(size(params.phys.sys.A)) + params.phys.sys.A * params.simu.dt;
+Gamma = params.phys.sys.B * params.simu.dt;
+
+nx = size(Phi, 1);
+
+% Pre-allocate the large matrices
+M = zeros(nx * N, nx);
+H = zeros(nx * N, N);
+
+% Precompute the first column of H and the rows of M
+% We iterate forward: Phi^1*Gamma, Phi^2*Gamma, etc.
+current_Phi = Phi; 
+current_Gamma = Gamma;
+
+for i = 1:N
+    row_idx = (i-1)*nx + 1 : i*nx;
+    
+    % Fill M (Initial state effect)
+    M(row_idx, :) = current_Phi;
+    
+    % Fill the first column-block of H_big
+    H(row_idx, 1) = current_Gamma;
+    
+    % Update for next step
+    current_Phi = Phi * current_Phi;
+    current_Gamma = Phi * current_Gamma;
+end
+
+% Fill the rest of H
+% Each column is just a shifted version of the column to its left
+for j = 2:N
+    % Copy the previous column shifted down by nx rows
+    source_rows = 1 : (N-j+1)*nx;
+    dest_rows = (j-1)*nx + 1 : N*nx;
+    
+    source_cols = (j-2) + 1 : (j-1);
+    dest_cols = (j-1) + 1 : j;
+    
+    H(dest_rows, dest_cols) = H(source_rows, source_cols);
+end
 end
