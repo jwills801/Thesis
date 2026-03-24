@@ -17,7 +17,16 @@ subplot(221), plot(dyn.t,dyn.u), xlabel('Time [s]'), ylabel('Control Input [Nm]'
 subplot(222), yyaxis left, plot(dyn.t,dyn.thetaDot), ylabel('Angular Velocity [rad/s]'), grid
 yyaxis right,plot(wave.torque.time,wave.torque.Texc), xlabel('Time [s]'), ylabel('Excitaiton Torque [Nm]')
 subplot(223), plot(dyn.t,dyn.thetaDot,'k',cntrl.optTraj.time,cntrl.optTraj.thetaDot,'k--'), xlabel('Time [s]'), ylabel('Angular Velocity [W]'), legend('Actual','Optimal'), grid
-% subplot(224), plot(t,[0,s]), xlabel('Time [s]'), ylabel('Sliding Surface'), grid
+switch cntrl.controller
+    case 'PI'
+        
+    case 'Sliding Mode'
+        thetaErr = dyn.theta - cntrl.optTraj.theta;
+        thetaDotErr = dyn.thetaDot - cntrl.optTraj.thetaDot;
+        s = thetaErr + cntrl.lambda*thetaDotErr;
+        subplot(224), plot(dyn.t,s), xlabel('Time [s]'), ylabel('Sliding Surface'), grid
+end
+
 
 % Plot cylinder velocity (add force later)
 theta = dyn.theta;

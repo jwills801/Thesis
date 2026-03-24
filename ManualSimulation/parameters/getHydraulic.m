@@ -1,7 +1,7 @@
 function hyd = getHydraulic(~)
 
 % Set Valued Control Inputs
-hyd.pressureRails = [0 15 30]*1e6;
+hyd.pressureRails = [0 10]*1e6;
 hyd.stroke = 5;
 hyd.rodArea = (.0254*6)^2*pi; % m^2: Radius squared times pi
 hyd.capArea = 1.5*hyd.rodArea; % m^2: Area ratio times rod Area

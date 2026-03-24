@@ -6,7 +6,7 @@ function eval = getValveLoss(params,dyn,switchMap)
 % Find switching events
     % These denote the start of the switch
     % The start and end of the simulation are also counted as events
-eventInds = [1, find(diff(dyn.uInd)~=0), length(dyn.t)-1];
+eventInds = [1; find(diff(dyn.uInd)~=0); length(dyn.t)-1];
 eventTimes = dyn.t(eventInds);
 
 switchRate = length(eventInds)/params.simu.finalTime;

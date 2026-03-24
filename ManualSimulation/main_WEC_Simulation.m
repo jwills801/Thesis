@@ -25,7 +25,6 @@
     % plotting/                       # Package for visualization
         % plotAll.m
 
-
 clear, close all
 
 % Load parameters
@@ -44,7 +43,7 @@ ctrl = getControl(params,wave);
 addpath("dynamics/")
 dyn = timeLoop(params,wave,ctrl);
 
-%% Evaluate
+% Evaluate
 addpath("evaluation/")
 eval = evaluate(params,dyn);
 

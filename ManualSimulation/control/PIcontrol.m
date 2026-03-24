@@ -1,4 +1,4 @@
-function out = PIcontrol(params,states,uInd_history)
+function out = PIcontrol(params,ctrl,states,uInd_history)
 % uInd_history is a vectory of the previous control inputs
 
 % Calculate the amount of time since the last switch
@@ -12,6 +12,9 @@ theta = states(2);
 
 % Get torque options
 ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
+if ctrl.limitChoices
+    ptoTorqueOptions([5,6,8,9]) = NaN;
+end
 
 % if it hasnt been very long, use the previous control index
 if timeSinceSwitch < .21

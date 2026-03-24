@@ -10,7 +10,7 @@ states = NaN(length(sys.A),length(t));
 states(:,1) = zeros(length(sys.A),1);
 
 % Initilize control and set I.C.
-uInd = ones(1,length(t)); uInd(1) = 1; 
+uInd = ones(length(t),1); uInd(1) = 1; 
 u = params.hyd.Force2Torque(0)*params.hyd.ptoForceOptions(uInd);
 
 waitbarObj = waitbar(0,'Simulating WEC Dynamics');
@@ -30,8 +30,8 @@ u(timeInd+1) = u(timeInd);
 dyn.u = u;
 dyn.uInd = uInd;
 dyn.states = states;
-dyn.thetaDot = states(1,:);
-dyn.theta = states(2,:);
+dyn.thetaDot = states(1,:)';
+dyn.theta = states(2,:)';
 dyn.t = t;
 
 end

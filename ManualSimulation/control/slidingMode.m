@@ -18,6 +18,10 @@ theta = states(2);
 
 % Get torque options
 ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
+if ctrl.limitChoices
+    % ptoTorqueOptions([5,6,8,9]) = NaN;
+end
+
 
 % Sliding Mode Contrl
 thetaError = theta-ctrl.optTraj.theta(timeInd);
@@ -25,40 +29,56 @@ thetaDotError = thetaDot-ctrl.optTraj.thetaDot(timeInd);
 s = thetaDotError+ctrl.lambda*thetaError;
 
 % Precompute Transition Matrices
-[M,H] = getTransition(params,ctrl.horizonInd);
+[M,H] = getTransition(params,2*ctrl.horizonInd);
 
 % pad vectors so we can simulate past the official time vector
-thetaOpt = [ctrl.optTraj.theta;zeros(ctrl.horizonInd,1)];
-thetaDotOpt = [ctrl.optTraj.thetaDot;zeros(ctrl.horizonInd,1)];
-Texc = [wave.torque.Texc;zeros(ctrl.horizonInd,1)];
+thetaOpt = [ctrl.optTraj.theta;zeros(2*ctrl.horizonInd,1)];
+thetaDotOpt = [ctrl.optTraj.thetaDot;zeros(2*ctrl.horizonInd,1)];
+Texc = [wave.torque.Texc;zeros(2*ctrl.horizonInd,1)];
 
 % if s is large, recalulate control input
 if abs(s) > ctrl.phi || timeInd == 1
     % Horizon indices
-    hInds = (timeInd:(timeInd+ctrl.horizonInd-1));
+    hInds = (timeInd:(timeInd+2*ctrl.horizonInd-1));
 
     % Desired States (we dont care about what happens with the rad states
     xStar = [thetaDotOpt(hInds),thetaOpt(hInds),zeros(length(hInds),2)];
 
     % Initialize cost vector
-    J = exp(-10*timeSinceSwitch) * ones(size(ptoTorqueOptions));
-    J(uInd_history(end)) = 0;
+        % Decaying function from previous switching time
+    J = (exp(-10*timeSinceSwitch) + ctrl.phi) * ones(length(ptoTorqueOptions),length(ptoTorqueOptions));
+    
+        % Constant loss if switching at all
+    J = J .* ~eye(size(J));
+
+        % Zero switching loss if we start from the choice we are currently at
+    J(uInd_history(end),:) = 0;
+
+        
 
     % Simulate future times for each control input
     for uInd = 1:length(ptoTorqueOptions)
         % Control inputs:
-        uOption = ptoTorqueOptions(uInd);
+        uOption = ptoTorqueOptions(uInd) * ones(ctrl.horizonInd,1);
+        for uInd2 = 1:length(ptoTorqueOptions)
+        % Control inputs:
+        uOption(ctrl.horizonInd+1:2*ctrl.horizonInd) = ptoTorqueOptions(uInd2) * ones(ctrl.horizonInd,1);
         
         % simulate this control action over the time horizon
         xHat_stacked = M*states + H*(uOption+Texc(hInds));
         xHat = reshape(xHat_stacked,size(xStar,2),size(xStar,1))';
 
+        % xHat2 = lsim(params.phys.sys,uOption+Texc(hInds),params.simu.time(hInds));
+
         S = (xHat - xStar)*[1; ctrl.lambda; 0; 0];
 
         % J(uInd) = J(uInd) + sum(S.^2);
-        J(uInd) = J(uInd) + abs(S(end));
+        J(uInd,uInd2) = J(uInd,uInd2) + sum(S.^2);
+        % J(uInd,uInd2) = J(uInd,uInd2) + abs(S(end));
+        end
     end
-    [~,uOptInd] = min(J);
+    [~,tmp] = min(J,[],"all");
+    [uOptInd,~] = ind2sub(size(J),tmp);
 else
     uOptInd = uInd_history(end);
 end
@@ -107,6 +127,9 @@ for j = 2:N
     
     source_cols = (j-2) + 1 : (j-1);
     dest_cols = (j-1) + 1 : j;
+
+    source_cols = 1;
+    dest_cols = j;
     
     H(dest_rows, dest_cols) = H(source_rows, source_cols);
 end
