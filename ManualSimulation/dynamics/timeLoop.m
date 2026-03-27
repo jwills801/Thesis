@@ -17,7 +17,8 @@ waitbarObj = waitbar(0,'Simulating WEC Dynamics');
 for timeInd = 1:length(t)-1
     waitbar(timeInd/length(t),waitbarObj);
 
-    [u(timeInd), uInd(timeInd)] = controlLaw(params,cntrl,wave,states(:,timeInd),uInd(1:timeInd-1));
+    % [u(timeInd), uInd(timeInd)] = controlLaw(params,cntrl,wave,states(:,timeInd),uInd(1:timeInd-1));
+    [u(timeInd), uInd(timeInd)] = controlLaw(params,cntrl,wave,states(:,timeInd),u(1:timeInd-1));
 
     states(:,timeInd+1) = advanceStep(states(:,timeInd),dt,sys,u(timeInd)+Texc(timeInd));
 end

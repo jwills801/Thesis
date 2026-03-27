@@ -46,14 +46,13 @@ if abs(s) > ctrl.phi || timeInd == 1
 
     % Initialize cost vector
         % Decaying function from previous switching time
-    J = (exp(-10*timeSinceSwitch) + ctrl.phi) * ones(length(ptoTorqueOptions),length(ptoTorqueOptions));
+    J = (exp(-10*timeSinceSwitch) + 0e-4) * ones(length(ptoTorqueOptions),length(ptoTorqueOptions));
     
         % Constant loss if switching at all
     J = J .* ~eye(size(J));
 
         % Zero switching loss if we start from the choice we are currently at
     J(uInd_history(end),:) = 0;
-
         
 
     % Simulate future times for each control input

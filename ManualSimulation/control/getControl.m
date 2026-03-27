@@ -7,7 +7,8 @@ function cntrl = getControl(params,wave)
     cntrl.horizonInd = round(cntrl.timeHorizon/params.simu.dt);
     cntrl.lambda = 1; % Defines the sliding surface
     cntrl.phi = 3e-2; % band around sliding surface
-controller = 'Coulomb Damping';
+% controller = 'Coulomb Damping';
+controller = 'MPC';
 
 optTraj = getOptimal(params,wave);
 
