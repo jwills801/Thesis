@@ -27,6 +27,7 @@
 
 clear, close all
 
+tic
 % Load parameters
 addpath("parameters/")
 params = getParameters;
@@ -51,3 +52,4 @@ eval = evaluate(params,dyn);
 addpath("plotting/")
 plotAll(params,wave,ctrl,dyn,eval);
 
+toc
