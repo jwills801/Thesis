@@ -22,23 +22,19 @@ phase = 2*pi*rand(size(w));
 
 % Interpolate from the frequencies used in capytaine to the ones we want to
 % use here
-ex_re = interp1(wave.BEMdata.hydro.w,squeeze(wave.BEMdata.hydro.ex_re(5,1,:)),w);
-ex_im = interp1(wave.BEMdata.hydro.w,squeeze(wave.BEMdata.hydro.ex_im(5,1,:)),w);
+Kexc = interp1(wave.w,wave.Kexc,w);
 
 % Clean the real data
-    % the first few entries in this are infinite, but they should be zero
-ex_re(~isfinite(ex_re))=0;
-
-% Put together the real and imaginary components and dimensionalize
-F = (ex_re+ex_im*1i) * rho*g;
+    % If any entries are infinite, they should be zero
+Kexc(~isfinite(Kexc))=0;
 
 % Put it all together to get the excitation torque
-Texc = ramp.* real(sum( exp(1i*(t*w+phase)) .* (F.*sqrt(2*S_w.*dw)) ,2));
+Texc = ramp.* real(sum( exp(1i*(t*w+phase)) .* (Kexc.*sqrt(2*S_w.*dw)) ,2));
 
 % output
 out.Texc = Texc;
 out.time = t;
-out.elevation2torque = F;
+out.elevation2torque = Kexc;
 out.phase = phase;
 out.ramp = ramp;
 

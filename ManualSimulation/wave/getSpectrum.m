@@ -1,4 +1,4 @@
-function out = getSpectrum(BEMdata,Tp,Hs)
+function out = getSpectrum(w,Tp,Hs)
 % Author: Jackson Wills
 % Date made: Feb 23, 2026
 
@@ -11,9 +11,9 @@ function out = getSpectrum(BEMdata,Tp,Hs)
 
 
 % Define frequencies to consider
-omegaMin = min(BEMdata.hydro.w); %rad/s
-omegaMax = max(BEMdata.hydro.w); % rad/s
-omegaNum = length(BEMdata.hydro.w); % number of frequencies considered
+omegaMin = min(w); %rad/s
+omegaMax = max(w); % rad/s
+omegaNum = length(w); % number of frequencies considered
 omegaVals = linspace(omegaMin,omegaMax,omegaNum);
 
 % Pierson-Moskowitz Spectrum for fully develped sea states
