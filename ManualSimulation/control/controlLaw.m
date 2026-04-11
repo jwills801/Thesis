@@ -5,8 +5,10 @@ switch ctrl.controller
         out = PIcontrol(params,ctrl,states,uInd_history);
     case 'Sliding Mode'
         out = slidingMode(params,ctrl,wave,states,uInd_history);
-            case 'MPC'
+    case 'MPC_QP'
         out = MPC(params,ctrl,wave,states,uInd_history);
+    case 'MPC_DP'
+        out = MPC_DP(params,ctrl,wave,states,uInd_history);
     case 'Coulomb Damping'
         out = coulombDamping(params,states);
 end

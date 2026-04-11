@@ -8,7 +8,8 @@ function ctrl = getControl(params,wave)
     ctrl.lambda = 1; % Defines the sliding surface
     ctrl.phi = 3e-2; % band around sliding surface
 % controller = 'Coulomb Damping';
-controller = 'MPC';
+controller = 'MPC_QP';
+controller = 'MPC_DP';
 
 optTraj = getOptimal(params,wave);
 
@@ -16,7 +17,7 @@ ctrl.optTraj = optTraj;
 ctrl.controller = controller;
 
 switch controller
-    case'MPC'
+    case'MPC_QP'
     % numberof control time steps
 m = 100;
 gamma = 3e-6;
@@ -37,6 +38,22 @@ ctrl.MPC.H = H;
 ctrl.MPC.L = L;
 ctrl.MPC.C = C;
 ctrl.MPC.Q = Q;
+
+    case'MPC_DP'
+        m = 100;
+        n=ctrl.horizonInd;
+
+        % Precompute Matrices for mechanical energy calculation
+        [M_local,H_local] = getTransition(params,n);
+        [~,C_local,~] = getUtilityMatrices(1,params,n);
+        w = M_local'*C_local*dt;
+        Q_local = ones(params,ctrl.horizonInd,1)*H_local'*C_local*dt;
+        
+        b_exc = waveEnergyContribution(C_local'*H_local*dt,m,n);
+
+        
+        
+        Xfree = lsim(params.phys.sys,wave.torque.Texc,wave.torque.time);
 
 end
 
@@ -118,4 +135,20 @@ function [L,C,Q_sw] = getUtilityMatrices(m,n)
     
     % diag(v, k) places vector v on the k-th diagonal
     Q_sw = diag(main_diag) + diag(off_diag, 1) + diag(off_diag, -1);
+end
+
+function b_exc = waveEnergyContribution(gain,m,n)
+
+b_exc = NaN(m,1);
+for k = 1:m
+    % Extract the n-step window for this specific block k
+    idx_start = (k-1)*n + 1;
+    idx_end   = k*n;
+    
+    % T_k contains the n wave torque samples for the current block
+    T_k = T_exc(idx_start:idx_end);
+
+    % Calculate scalar wave energy potential for this block
+    b_exc(k) = gain * T_k;
+end
 end
