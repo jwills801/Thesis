@@ -1,6 +1,7 @@
 function simu = getSimulation(~)
 
 simu.finalTime = 500;
+simu.waveFinalTime = 600;
 simu.dt = 1e-2;
 simu.rampTime = 50; % s
 simu.time = (0:simu.dt:simu.finalTime)';

@@ -1,5 +1,5 @@
 function optTraj = getOptimal(params,wave)
-t = params.simu.time;
+t = wave.torque.time;
 
 % Load info about the system
 sys = params.phys.sys;

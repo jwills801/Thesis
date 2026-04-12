@@ -8,13 +8,11 @@ dw = wave.spectrum.dw;
 S_w = wave.spectrum.S_w;
 
 % Load time vector
-t = params.simu.time;
+t = (0:params.simu.dt:params.simu.waveFinalTime)';
 rampTime = params.simu.rampTime;
-
 
 % Generate ramp function
 ramp = .5*(1+cos(pi + pi/rampTime*t)).*(t<rampTime) + (t>=rampTime);
-
 
 % Randomly assign phases to each frequencies
 rng(1) % Sets random seed for repeatability
