@@ -52,7 +52,7 @@ switch controller
         n = ctrl.horizonInd;
         N = m*n;
         dt= params.simu.dt;
-        m_Astar = 5;
+        ctrl.m_Astar = 5;
 
         % Precompute Matrices for mechanical energy calculation
         [M_local,H_local] = getTransition(params,n);
@@ -60,6 +60,15 @@ switch controller
         ctrl.w = M_local'*C_local*dt;
         ctrl.Q_local = ones(1,n)*H_local'*C_local*dt;
         ctrl.b_exc = waveEnergyContribution(C_local'*H_local*dt,wave.torque.Texc);
+
+        T_block_full = waveEnergyContribution(H_local,wave.torque.Texc);
+        H_block_full = H_local*ones(n,1);
+        
+        % Just take the last 4 rows
+        ctrl.T_block = T_block_full(end-3:end,:);
+        ctrl.H_block = H_block_full(end-3:end);
+        ctrl.M_block = M_local(end-3:end,:);
+
 
         % Precompute terminal cost matrices
         [M,H] = getTransition(params,N);
@@ -153,12 +162,13 @@ off_diag = -1 * ones(m-1, 1);
 Q_sw = diag(main_diag) + diag(off_diag, 1) + diag(off_diag, -1);
 end
 
-function b_exc = waveEnergyContribution(gain,Texc)
+function out = waveEnergyContribution(gain,Texc)
 N = size(Texc,1); % Number of fine time steps
 n = size(gain,2); % Number of fine time steps in one coarse one
 m = floor(N/n); % Number of coarse time steps
 
-b_exc = NaN(m,1);
+% This function works for both b_exc and T_block
+out = NaN(size(gain,1),m);
 for k = 1:m
     % Extract the n-step window for this specific block k
     idx_start = (k-1)*n + 1;
@@ -168,7 +178,7 @@ for k = 1:m
     T_k = Texc(idx_start:idx_end);
 
     % Calculate scalar wave energy potential for this block
-    b_exc(k) = gain * T_k;
+    out(:,k) = gain * T_k;
 end
 end
 
