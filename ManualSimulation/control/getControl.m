@@ -12,7 +12,7 @@ ctrl.controller = controller;
 % Define parameters for all controllers
 ctrl.timeHorizon = .2; % Length of a control step
 ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
-ctrl.numHorizons = 100;
+ctrl.numHorizons = params.simu.peakPeriod*2.5/ctrl.timeHorizon;
 
 % Get optimal trajectory and energy
 optTraj = getOptimal(params,wave);
@@ -51,7 +51,7 @@ switch controller
         m = ctrl.numHorizons;
         n = ctrl.horizonInd;
         dt= params.simu.dt;
-        ctrl.m_Astar = 5;
+        ctrl.m_Astar = 10;
 
         % Precompute Matrices for mechanical energy calculation
         [M_local,H_local] = getTransition(params,n);
@@ -59,7 +59,6 @@ switch controller
         ctrl.w = M_local'*C_local*dt;
         ctrl.Q_local = ones(1,n)*H_local'*C_local*dt;
         ctrl.b_exc = waveEnergyContribution(C_local'*H_local*dt,wave.torque.Texc);
-        ctrl.Q_local2 = ctrl.Q_local + ctrl.Q_local';
 
         T_block_full = waveEnergyContribution(H_local,wave.torque.Texc);
         H_block_full = H_local*ones(n,1);
@@ -73,7 +72,7 @@ switch controller
         ctrl.termCost = getTerminalCostMatrices(params,wave,m,n,ctrl.m_Astar);
 
         % Test matrices
-       %  testing(ctrl,params,wave);
+        testing(ctrl,params,wave);
 end
 
 end
@@ -83,8 +82,16 @@ end
 
 function [M,H] = getTransition(params,N)
 
+% Forward Euler
 Phi = eye(size(params.phys.sys.A)) + params.phys.sys.A * params.simu.dt;
 Gamma = params.phys.sys.B * params.simu.dt;
+
+% Zero Order Hold
+A = params.phys.sys.A;
+B = params.phys.sys.B;
+dt = params.simu.dt;
+Phi = expm(params.phys.sys.A * params.simu.dt);
+Gamma = integral(@(s) expm(A*s), 0, dt, 'ArrayValued', true) * B;
 
 nx = size(Phi, 1);
 
@@ -183,11 +190,11 @@ m = size(Qinv,1); % Number of coarse time steps in the terminal cost
 n = floor(N/m); % Number of fine time steps in one coarse one
 
 % Total number of fine and coarse time steps
-N_total = size(Texc,1); % Number of fine time steps
-m_total = floor(N_total/n)-m;
+N_total = size(Texc,1); % Total number of fine time steps
+m_total = floor(N_total/n)-m; % total number of coarse time steps
 
 % Group all terms that don't depend on the specific wave window T
-K_r = H' * C * Qinv * C' * M;     % [N x 4] matrix
+K_r = H' * C * Qinv * C' * M; % [N x 4] matrix
 K_b = H' * C * Qinv * C' * H; % [N x N] matrix
 
 % Initilize vectors
@@ -197,7 +204,7 @@ b = NaN(m_total,1);
 % Calculate rT and b for each control window
 for k = 1:m_total
     % Extract the N-step window for this specific block k
-    idx_start = (k-1)*n + 1;
+    idx_start = (k-1)*n + 1; % if k = 1, start at zero
     idx_end   = idx_start + N - 1;
     
     % T contains the N wave torque samples for the current block
@@ -214,7 +221,9 @@ function out = getTerminalCostMatrices(params,wave,m,n,m_Astar)
 % Comput terminal cost matrices for inside the Astar method
 dt= params.simu.dt;
 out(m_Astar) = struct();
+bar = waitbar(0,'Precomputing Terminal Cost Matrices');
 for d = 1:m_Astar
+    waitbar((d-1)/m_Astar,bar)
     N = (m-d)*n;
 
     % Get matrices
@@ -230,47 +239,78 @@ for d = 1:m_Astar
     out(d).rT = rT;
     out(d).b = b;
 end
+close(bar)
 end
 
 
 function testing(ctrl,params,wave)
 
-        %% simulate trajectory
-            t_start = 50; [~,t_startInd] = min(abs(wave.torque.time-t_start));
-            t_end = t_start + 0.2; [~,t_endInd] = min(abs(wave.torque.time-t_end));
-            time = wave.torque.time(t_startInd:t_endInd);
-            Texc = wave.torque.Texc(t_startInd:t_endInd);
-            x0 = zeros(4,1);
-            sys = params.phys.sys;
-            u = 1e6;%*sin(time);
-        
-            states = lsim(sys,Texc+u,time,x0);
+%% simulate trajectory
+t_start = 50; [~,t_startInd] = min(abs(wave.torque.time-t_start));
+t_end = t_start + 0.2; [~,t_endInd] = min(abs(wave.torque.time-t_end));
+time = wave.torque.time(t_startInd:t_endInd);
+Texc = wave.torque.Texc(t_startInd:t_endInd);
+x0 = zeros(4,1);
+sys = params.phys.sys;
 
-            mechPow = u.*states(:,1);
-            mechEnergy = trapz(time,mechPow)
+% Compute optimal control
+k=floor(t_start/.2)+1;
+w = ctrl.w;
+b_exc = ctrl.b_exc(k);
+Q_local = ctrl.Q_local;
+u = -(w'*x0+b_exc)/2/Q_local;
+% u = 1e6;%*sin(time);
+u = 0;
 
-            % Test matrices
-                    % Advance state
-                    k=floor(t_start/.2)+1;
-        M_block = ctrl.M_block;
-        T_block = ctrl.T_block(:,k);
-        H_block = ctrl.H_block;
-        xf = M_block*x0+T_block+H_block*u;
-        [xf(1:2),states(end,1:2)']
+% Advance state
+M_block = ctrl.M_block;
+T_block = ctrl.T_block(:,k);
+H_block = ctrl.H_block;
+xf = M_block*x0+T_block+H_block*u;
 
-        % Energy in this block
-        w = ctrl.w;
-        b_exc = ctrl.b_exc(k);
-        Q_local = ctrl.Q_local;
-        E_mech = (w'*x0+b_exc)*u + u^2*Q_local
+% Energy in this block
+E_mech = (w'*x0+b_exc)*u + u^2*Q_local;
 
-        % future cost
-        P = ctrl.termCost(1).P;
-        rT = ctrl.termCost(1).rT(k,:);
-        b = ctrl.termCost(1).b(k);
-        E_term = xf'*P*xf + rT*xf + b
+% future cost
+d = 1;
+P = ctrl.termCost(d).P;
+rT = ctrl.termCost(d).rT(k+1,:);
+b = ctrl.termCost(d).b(k+1);
+E_term1 = xf'*P*xf + rT*xf + b
+xf'*P*xf
 
+% Now lets look at the next time step
+x0 = xf; d=2;
+% choose optimal control again
+b_exc = ctrl.b_exc(k+d-1);
+u = -(w'*x0+b_exc)/2/Q_local;
+u = 0*16.096e6;
+% Advance state again
+T_block = ctrl.T_block(:,k+d-1);
+xf = M_block*x0+T_block+H_block*u;
+% Compute absorbed energy
+E_mech = (w'*x0+b_exc)*u + u^2*Q_local
+% compute terminal energy
+rT = ctrl.termCost(d).rT(k+d,:);
+b = ctrl.termCost(d).b(k+d);
+E_term = xf'*P*xf + rT*xf + b
+xf'*P*xf
+% total cost
+E_total = E_mech+E_term
+E_total-E_term1
 
+disp('---------------')
+%% Compare these states to lsim
+% Lsim results
+states = lsim(sys,Texc+u,time,x0, 'zoh');
+mechPow = u.*states(2:end,1);
+mechEnergy = sum(mechPow)*(time(2)-time(1));
+
+% Compare results
+[xf(1:2),states(end,1:2)'];
+[xf(3:4),states(end,3:4)'];
+
+disp('---------------')
 % figure, plot(time,states(:,1))
 a=0;
 end

@@ -27,6 +27,7 @@ else
         
         % reorder nodes
         nodes = nodes(idx);
+        % [nodes.cost]
 
         % Get info about this node
         d = length(nodes(1).history);
@@ -47,7 +48,7 @@ else
             new_node.history = [nodes(1).history, uInd];
             new_node.xf = x_next;
             new_node.E_absorbed = nodes(1).E_absorbed + E_step;
-            new_node.cost = nodes(1).E_absorbed + E_term;
+            new_node.cost = new_node.E_absorbed + E_term;
 
             % Add child to the pool
             nodes = [nodes, new_node]; 
@@ -101,14 +102,12 @@ w = ctrl.w;
 b_exc = ctrl.b_exc(k+d-1);
 Q_local = ctrl.Q_local;
 E_mech = (w'*x+b_exc)*u + u^2*Q_local;
-E_mech = (w'*x+b_exc)*u + u*ctrl.Q_local2*u/2;
-
 
 % Switching Loss
 E_sw = 0;
 
 % Absorbed energy
-E_absorbed = E_mech - E_sw;
+E_absorbed = E_mech + E_sw;
 
 % Advance state
 M_block = ctrl.M_block;
