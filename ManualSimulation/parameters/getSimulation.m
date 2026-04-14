@@ -3,7 +3,7 @@ function simu = getSimulation(~)
 simu.finalTime = 100;
 simu.waveFinalTime = 200;
 simu.dt = 1e-2;
-simu.rampTime = 50; % s
+simu.rampTime = 20; % s
 simu.time = (0:simu.dt:simu.finalTime)';
 
 simu.peakPeriod = 8; % s

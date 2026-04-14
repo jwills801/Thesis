@@ -5,7 +5,7 @@ function ctrl = getControl(params,wave)
 % controller = 'PI';
 % controller = 'Sliding Mode'
 % controller = 'Coulomb Damping';
-%controller = 'MPC_QP';
+% controller = 'MPC_QP';
 controller = 'MPC_DP';
 ctrl.controller = controller;
 
@@ -28,7 +28,7 @@ switch controller
     case 'Coulomb Damping'
     case'MPC_QP'
         m = ctrl.numHorizons;
-        gamma = 3e-6;
+        gamma = 0*3e-6;
 
         % Precompute Transition Matrices
         [M,H] = getTransition(params,m*ctrl.horizonInd);
@@ -50,7 +50,6 @@ switch controller
     case'MPC_DP'
         m = ctrl.numHorizons;
         n = ctrl.horizonInd;
-        N = m*n;
         dt= params.simu.dt;
         ctrl.m_Astar = 5;
 
@@ -60,6 +59,7 @@ switch controller
         ctrl.w = M_local'*C_local*dt;
         ctrl.Q_local = ones(1,n)*H_local'*C_local*dt;
         ctrl.b_exc = waveEnergyContribution(C_local'*H_local*dt,wave.torque.Texc);
+        ctrl.Q_local2 = ctrl.Q_local + ctrl.Q_local';
 
         T_block_full = waveEnergyContribution(H_local,wave.torque.Texc);
         H_block_full = H_local*ones(n,1);
@@ -69,17 +69,11 @@ switch controller
         ctrl.H_block = H_block_full(end-3:end);
         ctrl.M_block = M_local(end-3:end,:);
 
-
         % Precompute terminal cost matrices
-        [M,H] = getTransition(params,N);
-        [L,C,~] = getUtilityMatrices(m,n);
-        Hu = H*L;
-        Qinv = inv(Hu'*C + C'*Hu);
-        ctrl.P=1/2*dt*M'*C*Qinv*C'*M;
-        [ctrl.rT,ctrl.b] = waveTerminalCost(H,C,Qinv,M,dt,wave.torque.Texc);
+        ctrl.termCost = getTerminalCostMatrices(params,wave,m,n,ctrl.m_Astar);
 
-        % Compute uncontroled trajectory
-        ctrl.Xfree = lsim(params.phys.sys,wave.torque.Texc,wave.torque.time);
+        % Test matrices
+       %  testing(ctrl,params,wave);
 end
 
 end
@@ -210,8 +204,73 @@ for k = 1:m_total
     T = Texc(idx_start:idx_end);
     
     % Calculate rT and b
-    rT(k,:) = T' * K_r * dt;   % Result is [1 x 4]
-    b(k)    = T' * K_b * T * dt/2; % Result is scalar
+    rT(k,:) = -T' * K_r * dt;   % Result is [1 x 4]
+    b(k)    = -T' * K_b * T * dt/2; % Result is scalar
 end
 
+end
+
+function out = getTerminalCostMatrices(params,wave,m,n,m_Astar)
+% Comput terminal cost matrices for inside the Astar method
+dt= params.simu.dt;
+out(m_Astar) = struct();
+for d = 1:m_Astar
+    N = (m-d)*n;
+
+    % Get matrices
+    [M,H] = getTransition(params,N);
+    [L,C,~] = getUtilityMatrices(m-d,n);
+    Hu = H*L;
+    Qinv = inv(Hu'*C + C'*Hu);
+    P = -1/2*dt*M'*C*Qinv*C'*M;
+    [rT,b] = waveTerminalCost(H,C,Qinv,M,dt,wave.torque.Texc);
+
+    % Save matrices
+    out(d).P=P;
+    out(d).rT = rT;
+    out(d).b = b;
+end
+end
+
+
+function testing(ctrl,params,wave)
+
+        %% simulate trajectory
+            t_start = 50; [~,t_startInd] = min(abs(wave.torque.time-t_start));
+            t_end = t_start + 0.2; [~,t_endInd] = min(abs(wave.torque.time-t_end));
+            time = wave.torque.time(t_startInd:t_endInd);
+            Texc = wave.torque.Texc(t_startInd:t_endInd);
+            x0 = zeros(4,1);
+            sys = params.phys.sys;
+            u = 1e6;%*sin(time);
+        
+            states = lsim(sys,Texc+u,time,x0);
+
+            mechPow = u.*states(:,1);
+            mechEnergy = trapz(time,mechPow)
+
+            % Test matrices
+                    % Advance state
+                    k=floor(t_start/.2)+1;
+        M_block = ctrl.M_block;
+        T_block = ctrl.T_block(:,k);
+        H_block = ctrl.H_block;
+        xf = M_block*x0+T_block+H_block*u;
+        [xf(1:2),states(end,1:2)']
+
+        % Energy in this block
+        w = ctrl.w;
+        b_exc = ctrl.b_exc(k);
+        Q_local = ctrl.Q_local;
+        E_mech = (w'*x0+b_exc)*u + u^2*Q_local
+
+        % future cost
+        P = ctrl.termCost(1).P;
+        rT = ctrl.termCost(1).rT(k,:);
+        b = ctrl.termCost(1).b(k);
+        E_term = xf'*P*xf + rT*xf + b
+
+
+% figure, plot(time,states(:,1))
+a=0;
 end
