@@ -1,7 +1,6 @@
 function ctrl = getControl(params,wave)
 
-
-
+%% Select Controller
 % controller = 'PI';
 % controller = 'Sliding Mode'
 % controller = 'Coulomb Damping';
@@ -9,16 +8,16 @@ function ctrl = getControl(params,wave)
 controller = 'MPC_DP';
 ctrl.controller = controller;
 
-% Define parameters for all controllers
+%% Define parameters for all controllers
 ctrl.timeHorizon = .2; % Length of a control step
 ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
 ctrl.numHorizons = params.simu.peakPeriod*2.5/ctrl.timeHorizon;
 
-% Get optimal trajectory and energy
+%% Get optimal trajectory and energy
 optTraj = getOptimal(params,wave);
 ctrl.optTraj = optTraj;
 
-% Define parameters unique to each controller
+%% Define parameters unique to each controller
 switch controller
     case 'PI'
         ctrl.limitChoices = 1;
@@ -27,18 +26,20 @@ switch controller
         ctrl.phi = 3e-2; % band around sliding surface
     case 'Coulomb Damping'
     case'MPC_QP'
-        m = ctrl.numHorizons;
+        % gamma is the weigting on the switching loss function
         gamma = 0*3e-6;
 
         % Precompute Transition Matrices
+        m = ctrl.numHorizons;
         [M,H] = getTransition(params,m*ctrl.horizonInd);
 
         % Other Matrices
         [L,C,Q_sw] = getUtilityMatrices(m,ctrl.horizonInd);
 
+        % Define the matrix Q
         Q = transpose(H*L)*C + gamma*Q_sw;
 
-        % output
+        % save output to a structure
         ctrl.MPC.m = m;
         ctrl.MPC.gamma = gamma;
         ctrl.MPC.M = M;
@@ -48,18 +49,20 @@ switch controller
         ctrl.MPC.Q = Q;
 
     case'MPC_DP'
-        m = ctrl.numHorizons;
+        % Number of A star time steps
+        ctrl.m_Astar = 3;
+
+        % unwrap useful parameters
+        m = ctrl.numHorizons; % This is the terminal cost horizon
         n = ctrl.horizonInd;
         dt= params.simu.dt;
-        ctrl.m_Astar = 10;
-
+        
         % Precompute Matrices for mechanical energy calculation
         [M_local,H_local] = getTransition(params,n);
         [~,C_local,~] = getUtilityMatrices(1,n);
         ctrl.w = M_local'*C_local*dt;
         ctrl.Q_local = ones(1,n)*H_local'*C_local*dt;
         ctrl.b_exc = waveEnergyContribution(C_local'*H_local*dt,wave.torque.Texc);
-
         T_block_full = waveEnergyContribution(H_local,wave.torque.Texc);
         H_block_full = H_local*ones(n,1);
         
@@ -71,8 +74,8 @@ switch controller
         % Precompute terminal cost matrices
         ctrl.termCost = getTerminalCostMatrices(params,wave,m,n,ctrl.m_Astar);
 
-        % Test matrices
-        testing(ctrl,params,wave);
+        % Test the matrices
+        % testing(ctrl,params,wave);
 end
 
 end
@@ -90,7 +93,7 @@ Gamma = params.phys.sys.B * params.simu.dt;
 A = params.phys.sys.A;
 B = params.phys.sys.B;
 dt = params.simu.dt;
-Phi = expm(params.phys.sys.A * params.simu.dt);
+Phi = expm(A * dt);
 Gamma = integral(@(s) expm(A*s), 0, dt, 'ArrayValued', true) * B;
 
 nx = size(Phi, 1);

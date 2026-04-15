@@ -19,7 +19,7 @@ else
     nodes = initlizeNodes(nU,states,params,ctrl,k,uIndPrev);
 
     % Begin Astar algorith 
-    flag = 0; iter = 0; iterMax = 10;
+    flag = 0; iter = 0; iterMax = 1e4;
     while flag == 0
 
         % sort nodes
