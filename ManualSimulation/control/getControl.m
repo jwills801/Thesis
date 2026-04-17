@@ -50,7 +50,7 @@ switch controller
 
     case'MPC_DP'
         % Number of A star time steps
-        ctrl.m_Astar = 3;
+        ctrl.m_Astar = 5;
 
         % unwrap useful parameters
         m = ctrl.numHorizons; % This is the terminal cost horizon

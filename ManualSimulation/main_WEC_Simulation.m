@@ -12,9 +12,14 @@
         % getTorqueTimeSeries.m
         % calculateWavePower.m
     %control/                        # Package for control functions
+        % getControl.m
+        % controlLaw.m
         % getOptimal.m
+        % coulombDamping.m
         % PIcontrol.m
         % slidingMode.m
+    	% MPC_DP.m
+        % MPC.m
     % dynamics/
         % timeLoop.m
         % advanceStep.m
@@ -31,7 +36,8 @@ tic
 % Load parameters
 addpath("parameters/")
 params = getParameters;
-
+diff(sort(params.hyd.ptoForceOptions(:)))
+%%
 % Calculate excitation torque
 addpath("wave/")
 wave = generateExcitingTorque(params);
@@ -44,7 +50,7 @@ ctrl = getControl(params,wave);
 addpath("dynamics/")
 dyn = timeLoop(params,wave,ctrl);
 
-% Evaluate
+%% Evaluate
 addpath("evaluation/")
 eval = evaluate(params,dyn);
 

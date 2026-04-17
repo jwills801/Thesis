@@ -1,12 +1,7 @@
 function eval = evaluate(params,dyn)
     
-    % load or calculate switching losses
-    %switchMap = makeSwitchLossMap(params);
-     %   save("evaluation/SwitchMap.mat","switchMap")
-    load("SwitchMap.mat")
-
     % Calculate switching losses
-    eval = getValveLoss(params,dyn,switchMap);
+    eval = getValveLoss(params,dyn);
 
     % Calculate mechanical power
     eval.mechPower = -dyn.u.*dyn.thetaDot;

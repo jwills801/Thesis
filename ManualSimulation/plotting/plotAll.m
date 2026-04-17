@@ -15,8 +15,8 @@ xlabel('Time [s]'), ylabel('Cummulative Energy [J]'), grid
 figure
 subplot(221), plot(dyn.t,dyn.u), xlabel('Time [s]'), ylabel('Control Input [Nm]'), grid
 subplot(222), yyaxis left, plot(dyn.t,dyn.thetaDot), ylabel('Angular Velocity [rad/s]'), grid
-yyaxis right,plot(wave.torque.time,wave.torque.Texc), xlabel('Time [s]'), ylabel('Excitaiton Torque [Nm]')
-subplot(223), plot(dyn.t,dyn.thetaDot,'k',cntrl.optTraj.time,cntrl.optTraj.thetaDot,'k--'), xlabel('Time [s]'), ylabel('Angular Velocity [W]'), legend('Actual','Optimal'), grid
+yyaxis right,plot(wave.torque.time,wave.torque.Texc), xlabel('Time [s]'), ylabel('Excitaiton Torque [Nm]'), grid, xlim([min(dyn.t) max(dyn.t)])
+subplot(223), plot(dyn.t,dyn.thetaDot,'k',cntrl.optTraj.time,cntrl.optTraj.thetaDot,'k--'), xlabel('Time [s]'), ylabel('Angular Velocity [W]'), legend('Actual','Optimal'), grid, , xlim([min(dyn.t) max(dyn.t)])
 switch cntrl.controller
     case 'PI'
         
