@@ -1,4 +1,4 @@
-function dyn = timeLoop(params,wave,cntrl)
+function dyn = timeLoop(params,wave,ctrl)
 % Time
 t = params.simu.time;
 dt = params.simu.dt;
@@ -11,13 +11,13 @@ states(:,1) = zeros(length(sys.A),1);
 
 % Initilize control and set I.C.
 uInd = ones(length(t),1); uInd(1) = 1; 
-u = params.hyd.Force2Torque(0)*params.hyd.ptoForceOptions(uInd);
+u = 0;
 
 waitbarObj = waitbar(0,'Simulating WEC Dynamics');
 for timeInd = 1:length(t)-1
     waitbar(timeInd/length(t),waitbarObj);
 
-    [u(timeInd), uInd(timeInd)] = controlLaw(params,cntrl,wave,states(:,timeInd),uInd(1:timeInd-1));
+    [u(timeInd), uInd(timeInd)] = controlLaw(params,ctrl,wave,states(:,timeInd),uInd(1:timeInd-1));
 
     states(:,timeInd+1) = advanceStep(states(:,timeInd),dt,sys,u(timeInd)+Texc(timeInd));
 end

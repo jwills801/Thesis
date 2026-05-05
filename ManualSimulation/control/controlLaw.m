@@ -1,15 +1,15 @@
 function [u, uInd] = controlLaw(params,ctrl,wave,states,uInd_history)
 
-switch ctrl.controller
+switch params.runParams.controller
     case 'PI'
         out = PIcontrol(params,ctrl,states,uInd_history);
-    case 'Sliding Mode'
+    case 'SlidingMode'
         out = slidingMode(params,ctrl,wave,states,uInd_history);
     case 'MPC_QP'
-        out = MPC(params,ctrl,wave,states,uInd_history);
-    case 'MPC_DP'
-        out = MPC_DP(params,ctrl,wave,states,uInd_history);
-    case 'Coulomb Damping'
+        out = MPC_QP(params,ctrl,wave,states,uInd_history);
+    case 'MPC_Astar'
+        out = MPC_Astar(params,ctrl,wave,states,uInd_history);
+    case 'CoulombDamping'
         out = coulombDamping(params,states);
 end
 u = out.controlValue;

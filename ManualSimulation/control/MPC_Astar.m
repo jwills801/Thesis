@@ -1,4 +1,4 @@
-function out = MPC_DP(params,ctrl,wave,states,uInd_history)
+function out = MPC_Astar(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end
 
@@ -67,6 +67,11 @@ else
     % Use control from the beginning of the history
     uInd = nodes(1).history(1);
 
+    % Efficiency
+    fullTree = (nU^ctrl.m_Astar-1)/(nU-1);
+    AStar_eff = iter/fullTree;
+    a=1;
+
 end
 
 % Output
@@ -103,7 +108,11 @@ Q_local = ctrl.Q_local;
 E_mech = (w'*x+b_exc)*u + u^2*Q_local;
 
 % Switching Loss
-E_sw = getSwitchingLoss(params,x,uInd,uIndPrev);
+if params.runParams.considerSwitchingLoss
+    E_sw = getSwitchingLoss(params,x,uInd,uIndPrev);
+else
+    E_sw = 0;
+end
 
 % Absorbed energy
 E_absorbed = E_mech + E_sw;

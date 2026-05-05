@@ -1,4 +1,4 @@
-function out = MPC(params,ctrl,wave,states,uInd_history)
+function out = MPC_QP(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control inputs
 
 % Calculate the amount of time since the last switch

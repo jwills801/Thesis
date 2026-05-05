@@ -1,12 +1,8 @@
-function hyd = getHydraulic(~)
-
-
-hyd.pressureRails = [0 17 35]*1e6;
-% hyd.pressureRails = (0:1:35)*1e6;
+function hyd = getHydraulic(runParams)
 
 % Congifuration of hydraulic cylinder
-hyd.rodArea = (.0254*6)^2*pi; % m^2: Radius squared times pi
-hyd.capArea = 1.5*hyd.rodArea; % m^2: Area ratio times rod Area
+hyd.rodArea = runParams.rodArea; % m^2
+hyd.capArea = runParams.capArea; % m^2
 
 % Cylinder torque and angular velocity
 hyd.stroke = 5;
@@ -20,18 +16,28 @@ hyd.Force2Torque = @(theta) cylHorizDist*r_cyl*cos(theta)./hyd.L(theta);
 hyd.L_equilib = hyd.L(0);
 hyd.L_retract = hyd.L_equilib - hyd.stroke/2; % Length of cylinder at full retraction
 
-% Set Valued Control Inputs
-capForceOptions = hyd.pressureRails * hyd.capArea;
-rodForceOptions = hyd.pressureRails * hyd.rodArea;
-hyd.ptoForceOptions = capForceOptions'-rodForceOptions;
+switch runParams.drive
+    case {'DHD', 'PassivePump'}
+        % Set Valued Control Inputs
+        hyd.pressureRails = runParams.pressureRails;
+        capForceOptions = hyd.pressureRails * hyd.capArea;
+        rodForceOptions = hyd.pressureRails * hyd.rodArea;
+        hyd.ptoForceOptions = capForceOptions'-rodForceOptions;
+end
 
 
 % load or calculate switching losses
-switchMap = makeSwitchLossMap(hyd);
-   save("parameters/SwitchMap.mat","switchMap")
-% load("SwitchMap.mat")
-hyd.switchMap = switchMap;
-
+switch runParams.drive
+    case 'DHD'
+        switchMap = makeSwitchLossMap(hyd);
+        save("parameters/SwitchMap.mat","switchMap")
+        % load("SwitchMap.mat")
+        hyd.switchMap = switchMap;
+    case 'EHA'
+        % Load EHA losses
+        makeEHALossMap
+        hyd.EHA = EHA;
+end
 
 % Output function handels
 hyd.getVolandFlow = @getVolandFlow;

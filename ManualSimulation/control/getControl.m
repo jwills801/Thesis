@@ -1,13 +1,5 @@
 function ctrl = getControl(params,wave)
 
-%% Select Controller
-% controller = 'PI';
-% controller = 'Sliding Mode'
-% controller = 'Coulomb Damping';
-% controller = 'MPC_QP';
-controller = 'MPC_DP';
-ctrl.controller = controller;
-
 %% Define parameters for all controllers
 ctrl.timeHorizon = .2; % Length of a control step
 ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
@@ -18,17 +10,10 @@ optTraj = getOptimal(params,wave);
 ctrl.optTraj = optTraj;
 
 %% Define parameters unique to each controller
-switch controller
-    case 'PI'
-        ctrl.limitChoices = 1;
-    case 'Sliding Mode'
-        ctrl.lambda = 1; % Defines the sliding surface
-        ctrl.phi = 3e-2; % band around sliding surface
+switch params.runParams.controller
     case 'Coulomb Damping'
+    case 'PI'
     case'MPC_QP'
-        % gamma is the weigting on the switching loss function
-        gamma = 0*3e-6;
-
         % Precompute Transition Matrices
         m = ctrl.numHorizons;
         [M,H] = getTransition(params,m*ctrl.horizonInd);
@@ -48,7 +33,7 @@ switch controller
         ctrl.MPC.C = C;
         ctrl.MPC.Q = Q;
 
-    case'MPC_DP'
+    case 'MPC_Astar'
         % Number of A star time steps
         ctrl.m_Astar = 5;
 

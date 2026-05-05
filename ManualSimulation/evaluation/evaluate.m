@@ -1,7 +1,12 @@
 function eval = evaluate(params,dyn)
     
+switch params.runParams.drive
+    case {'DHD', 'PassivePump'}
     % Calculate switching losses
-    eval = getValveLoss(params,dyn);
+        eval = getValveLoss(params,dyn);
+    case {'EHA'}
+        eval = getEHALoss(params,dyn);
+end
 
     % Calculate mechanical power
     eval.mechPower = -dyn.u.*dyn.thetaDot;

@@ -10,28 +10,28 @@ timeSinceSwitch = params.simu.time(timeInd) - params.simu.time(lastSwitchInd);
 thetaDot = states(1);
 theta = states(2);
 
-% Get torque options
-ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
-if ctrl.limitChoices
-    ptoTorqueOptions([5,6,8,9]) = NaN;
-end
-
-% if it hasnt been very long, use the previous control index
-if timeSinceSwitch < .21
-    uInd = uInd_history(end);
-else
 % if its been long enough, recalculate the control input
-    H = freqresp(params.phys.sys , 2*pi/params.simu.peakPeriod);
+H = freqresp(params.phys.sys , 2*pi/params.simu.peakPeriod);
+Kp = real(1/H(1)');
+Ki = .8*(-2*pi/5*imag(1/H(1)'));
+u_cont = -1*(Kp*thetaDot + Ki*theta);
 
-    Kp = real(1/H(1)');
-    Ki = .8*(-2*pi/5*imag(1/H(1)'));
-
-    u_cont = -1*(Kp*thetaDot + Ki*theta);
-
-    % Discretize  
-    [~,uInd] = min(abs(u_cont-ptoTorqueOptions));
+% if it hasnt been very long, and we are using DHD, then use the previous control index
+switch params.runParams.drive
+    case 'DHD'
+        if timeSinceSwitch < .21
+            uInd = uInd_history(end);
+        else
+            % Discretize
+            ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
+            [~,uInd] = min(abs(u_cont-ptoTorqueOptions));
+        end
+        out.controlValue = ptoTorqueOptions(uInd);
+        out.controlIndex = uInd;
+    case 'EHA'
+        out.controlValue = u_cont;
+        out.controlIndex = 1;
 end
 
-out.controlValue = ptoTorqueOptions(uInd);
-out.controlIndex = uInd;
+
 end
