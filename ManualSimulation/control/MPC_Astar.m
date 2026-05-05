@@ -108,7 +108,7 @@ Q_local = ctrl.Q_local;
 E_mech = (w'*x+b_exc)*u + u^2*Q_local;
 
 % Switching Loss
-if params.runParams.considerSwitchingLoss
+if params.runParams.considerLosses
     E_sw = getSwitchingLoss(params,x,uInd,uIndPrev);
 else
     E_sw = 0;

@@ -35,8 +35,8 @@ switch runParams.drive
         hyd.switchMap = switchMap;
     case 'EHA'
         % Load EHA losses
-        makeEHALossMap
-        hyd.EHA = EHA;
+        vMax = 1;
+        hyd.EHA = makeEHALossMap(hyd.capArea,vMax);
 end
 
 % Output function handels

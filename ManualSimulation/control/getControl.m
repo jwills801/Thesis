@@ -19,19 +19,19 @@ switch params.runParams.controller
         [M,H] = getTransition(params,m*ctrl.horizonInd);
 
         % Other Matrices
-        [L,C,Q_sw] = getUtilityMatrices(m,ctrl.horizonInd);
-
-        % Define the matrix Q
-        Q = transpose(H*L)*C + gamma*Q_sw;
+        [L,C] = getUtilityMatrices(m,ctrl.horizonInd);
 
         % save output to a structure
         ctrl.MPC.m = m;
-        ctrl.MPC.gamma = gamma;
         ctrl.MPC.M = M;
         ctrl.MPC.H = H;
         ctrl.MPC.L = L;
         ctrl.MPC.C = C;
-        ctrl.MPC.Q = Q;
+
+        switch params.runParams.drive
+            case 'EHA'
+                ctrl.MPC.EHA = MPC_EHA(params,ctrl.MPC);
+        end
 
     case 'MPC_Astar'
         % Number of A star time steps
@@ -40,11 +40,11 @@ switch params.runParams.controller
         % unwrap useful parameters
         m = ctrl.numHorizons; % This is the terminal cost horizon
         n = ctrl.horizonInd;
-        dt= params.simu.dt;
+        dt = ctrl.timeHorizon;
         
         % Precompute Matrices for mechanical energy calculation
         [M_local,H_local] = getTransition(params,n);
-        [~,C_local,~] = getUtilityMatrices(1,n);
+        [~,C_local] = getUtilityMatrices(1,n);
         ctrl.w = M_local'*C_local*dt;
         ctrl.Q_local = ones(1,n)*H_local'*C_local*dt;
         ctrl.b_exc = waveEnergyContribution(C_local'*H_local*dt,wave.torque.Texc);
@@ -57,7 +57,7 @@ switch params.runParams.controller
         ctrl.M_block = M_local(end-3:end,:);
 
         % Precompute terminal cost matrices
-        ctrl.termCost = getTerminalCostMatrices(params,wave,m,n,ctrl.m_Astar);
+        ctrl.termCost = getTerminalCostMatrices(params,wave,dt,m,n,ctrl.m_Astar);
 
         % Test the matrices
         % testing(ctrl,params,wave);
@@ -123,7 +123,7 @@ for j = 2:N
 end
 end
 
-function [L,C,Q_sw] = getUtilityMatrices(m,n)
+function [L,C] = getUtilityMatrices(m,n)
 onesCol = ones(n,1);
 zerosCol = zeros(n,1);
 
@@ -140,15 +140,6 @@ for col = 1:m
         c_block;
         repmat(0*c_block,m-col,1)];
 end
-
-% Make Q_sw
-main_diag = 2 * ones(m, 1);
-main_diag(end) = 1;
-
-off_diag = -1 * ones(m-1, 1);
-
-% diag(v, k) places vector v on the k-th diagonal
-Q_sw = diag(main_diag) + diag(off_diag, 1) + diag(off_diag, -1);
 end
 
 function out = waveEnergyContribution(gain,Texc)
@@ -205,9 +196,8 @@ end
 
 end
 
-function out = getTerminalCostMatrices(params,wave,m,n,m_Astar)
+function out = getTerminalCostMatrices(params,wave,dt,m,n,m_Astar)
 % Comput terminal cost matrices for inside the Astar method
-dt= params.simu.dt;
 out(m_Astar) = struct();
 bar = waitbar(0,'Precomputing Terminal Cost Matrices');
 for d = 1:m_Astar
@@ -216,7 +206,7 @@ for d = 1:m_Astar
 
     % Get matrices
     [M,H] = getTransition(params,N);
-    [L,C,~] = getUtilityMatrices(m-d,n);
+    [L,C] = getUtilityMatrices(m-d,n);
     Hu = H*L;
     Qinv = inv(Hu'*C + C'*Hu);
     P = -1/2*dt*M'*C*Qinv*C'*M;
@@ -228,6 +218,27 @@ for d = 1:m_Astar
     out(d).b = b;
 end
 close(bar)
+end
+
+function out = MPC_EHA(params,in)
+
+% Choose whether to include losses in the controller
+if params.runParams.considerLosses
+    a = params.hyd.EHA.LossCoeffs(1);
+    b = params.hyd.EHA.LossCoeffs(2);
+    c = params.hyd.EHA.LossCoeffs(3);
+    d = params.hyd.EHA.LossCoeffs(4);
+else
+    a = 0; b = 0; c = 0; d = 0;
+end
+
+% Construct matrices from the loss coeffs
+out = struct();
+out.Q = in.C * diag(a*ones(in.m,1)) * in.C';
+out.G = in.C * diag(b*ones(in.m,1));
+out.R = diag(c*ones(in.m,1));
+out.D = d;
+
 end
 
 

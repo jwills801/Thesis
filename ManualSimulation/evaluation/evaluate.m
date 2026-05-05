@@ -21,6 +21,7 @@ end
     eval.aveMechPow = trapz(params.simu.time(inds),eval.mechPower(inds)) / (params.simu.finalTime - params.simu.rampTime);
 
     % Electrical output
-    eval.aveElecPow = eval.aveMechPow - eval.aveValveLoss;
+    eval.aveElecPow = eval.aveMechPow - eval.aveLoss;
+    eval.aveElecPowHat = eval.aveMechPow - eval.aveLossHat;
 
 end

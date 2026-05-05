@@ -66,10 +66,10 @@ end
 
 
 % Output results
-eval.TotalValveLoss = sum(loss);
-eval.lossAtSwitches = loss;
-eval.TotalValveLossAfterRamp = sum(lossAfterRamp);
-eval.aveValveLoss = eval.TotalValveLossAfterRamp / (params.simu.finalTime - params.simu.rampTime);
+eval.TotalLoss = sum(loss);
+eval.loss = loss;
+eval.TotalLossAfterRamp = sum(lossAfterRamp);
+eval.aveLoss = eval.TotalLossAfterRamp / (params.simu.finalTime - params.simu.rampTime);
 
 % Optional plots
 if 0

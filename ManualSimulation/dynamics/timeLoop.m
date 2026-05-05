@@ -11,7 +11,7 @@ states(:,1) = zeros(length(sys.A),1);
 
 % Initilize control and set I.C.
 uInd = ones(length(t),1); uInd(1) = 1; 
-u = 0;
+u = NaN(length(t),1); u(1) = 0;
 
 waitbarObj = waitbar(0,'Simulating WEC Dynamics');
 for timeInd = 1:length(t)-1

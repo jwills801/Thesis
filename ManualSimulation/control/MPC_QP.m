@@ -1,49 +1,58 @@
 function out = MPC_QP(params,ctrl,wave,states,uInd_history)
-% uInd_history is a vectory of the previous control inputs
-
-% Calculate the amount of time since the last switch
-timeInd = length(uInd_history)+1;
-lastSwitchInd = find(diff(uInd_history)~=0,1,'last');
-    if isempty(lastSwitchInd)
-        timeSinceSwitch = 10;
-        uInd_history = 1;
-    else
-        timeSinceSwitch = params.simu.time(timeInd) - params.simu.time(lastSwitchInd);
-    end
-
 % Get position and velocity
 thetaDot = states(1);
 theta = states(2);
 
-% Get torque options
-ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
-
 % switch on timehorizon time intervals
+timeInd = length(uInd_history)+1;
 if mod(timeInd,ctrl.horizonInd) == 1
-
-% pad vectors so we can simulate past the official time vector
-Texc = [wave.torque.Texc;zeros(ctrl.MPC.m*ctrl.horizonInd,1)];
-
-% place holder u values
-    % u = ptoTorqueOptions(ones(m,1));
-
     % Horizon indices
     hInds = (timeInd:(timeInd+ctrl.MPC.m*ctrl.horizonInd-1));
+    T = wave.torque.Texc(hInds);
 
-    % X = M*states + H*Texc(hInds) + H*L*u;
-
+    % X = M*states + H*T + H*L*u;
     % E = transpose(X)*C*u*.01;
 
-    f_sw = zeros(4*ctrl.MPC.m*ctrl.horizonInd,1); f_sw(1) = -ctrl.MPC.gamma*2*ptoTorqueOptions(uInd_history(end));
-    
-    u = inv(-ctrl.MPC.Q+transpose(-ctrl.MPC.Q)) * transpose(ctrl.MPC.C)*(ctrl.MPC.M*states+ctrl.MPC.H*Texc(hInds)+f_sw);
+    % Unpack matrices
+    C = ctrl.MPC.C; H = ctrl.MPC.H; L = ctrl.MPC.L; M = ctrl.MPC.M;
+    Q = ctrl.MPC.EHA.Q; G = ctrl.MPC.EHA.G; R = ctrl.MPC.EHA.R;
+    Hu = H*L;
+    x0 = states;
 
-    [~,uInd] = min(abs(ptoTorqueOptions-u(1)));
-else
-    uInd = uInd_history(end);
+    % Calculate A and B matrices
+    A = Hu'*C + Hu'*Q*Hu + Hu'*G + R;
+    B = x0'*M'*C + T'*H'*C + 2*x0'*M'*Q*Hu + 2*T'*H'*Q*Hu + x0'*M'*G + T'*H'*G;
+
+    % Solve for u
+    u = - (A+A') \ (B');
+
+% If we are using EHA we use the continuous control, if DHD then we discretize
+    switch params.runParams.drive
+        case 'EHA'
+            % for the eha we will use the control index to keep track of
+            % our zero order hold
+            out.controlValue = u(1);
+            out.controlIndex = u(1);
+        case 'DHD'
+            % Get torque options
+            ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
+            [~,uInd] = min(abs(ptoTorqueOptions-u(1)));
+            out.controlIndex = uInd;
+            out.controlValue = ptoTorqueOptions(uInd);
+    end
+else % this is for if we are not recalculating the control, just using the previous value
+        switch params.runParams.drive
+        case 'EHA'
+            % for the eha we will use the control index to keep track of
+            % our zero order hold
+            out.controlValue = uInd_history(end);
+            out.controlIndex = uInd_history(end);
+        case 'DHD'
+            % Get torque options
+            ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
+            out.controlIndex = uInd_history(end);
+            out.controlValue = ptoTorqueOptions(uInd_history(end));
+        end
 end
-% Output 
-out.controlValue = ptoTorqueOptions(uInd);
-out.controlIndex = uInd;
 end
 

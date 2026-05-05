@@ -22,12 +22,12 @@ switch params.runParams.drive
     case 'DHD'
         % Plot energy loss per event
         figure, yyaxis right
-        plot(eval.switchTimes(1:end-1),eval.lossAtSwitches,'*'), ylabel('Valve Loss [J]')
+        plot(eval.switchTimes(1:end-1),eval.loss,'*'), ylabel('Valve Loss [J]')
         yyaxis left
         plot(dyn.t,dyn.u), xlabel('Time [s]'), ylabel('Control Input [Nm]'), grid
 
         % Plot cummulative valve loss over time
-        figure, plot(eval.switchTimes(1:end-1),cumsum(eval.lossAtSwitches),...
+        figure, plot(eval.switchTimes(1:end-1),cumsum(eval.loss),...
             dyn.t,eval.mechEnergy), legend('Switching Loss','Absorbed Energy')
         xlabel('Time [s]'), ylabel('Cummulative Energy [J]'), grid
 end
@@ -41,8 +41,18 @@ figure, plot(dyn.t,theta*180/pi), xlabel('Time [s]'), ylabel('Flap Position [deg
 
 
 % Compare average powers
+% For the EHA, show the losses as if the convex map was used
+eha_str_loss = '';
+eha_str_pow = '';
+switch params.runParams.drive
+    case 'EHA'
+        eha_str_loss = ['(Estimated ', num2str(eval.aveLossHat/1e3,3), ' kW)'];
+        eha_str_pow = ['(Estimated ', num2str(eval.aveElecPowHat/1e3,3), ' kW)'];
+end
+
+% Display the average powers
 disp([params.runParams.drive,' with ' ,params.runParams.controller])
 disp(['Optimal Power = ', num2str(ctrl.optTraj.avePow/1e3,3), 'kW']);
 disp(['Mechanical Power = ', num2str(eval.aveMechPow/1e3,3), ' kW']);
-disp(['Valve Loss = ', num2str(eval.aveValveLoss/1e3,3), ' kW']);
-disp(['Electric Power = ', num2str(eval.aveElecPow/1e3,3), ' kW']);
+disp(['Drivetrain Loss = ', num2str(eval.aveLoss/1e3,3), ' kW ',eha_str_loss]);
+disp(['Electric Power = ', num2str(eval.aveElecPow/1e3,3), ' kW ',eha_str_pow]);

@@ -1,10 +1,10 @@
-A = .2;
-
+function EHA = makeEHALossMap(A,vMax)
+%%
 nV = 100;
 v_vals = linspace(-1,1,nV);
 
 nT = 100;
-T_vals = linspace(-1,1,nT)*1e6;
+T_vals = linspace(-1,1,nT)*3e7;
 
 [V,T] = ndgrid(v_vals,T_vals);
 
@@ -13,31 +13,37 @@ for i = 1:length(V(:))
     Q = V(i)*A;
     F = T(i)/2.7574;
     deltaP = F/A;
-    Loss(i) = ehaLoss(Q,deltaP,.5*A);
+    Loss(i) = ehaLoss(Q,deltaP,vMax*A);
 end
 
 % Least Squares
+% Reshape vectors for least squares and scale
 v = reshape(V,[nV*nT,1]);
 t = reshape(T,[nV*nT,1])/1e6;
 l = reshape(Loss,[nV*nT,1])/1e5;
 
-indep = [v.^2, 0*v.*t, t.^2, ones(nT*nV,1)];
+% Arrange independent variables
+indep = [v.^2, v.*t, t.^2, ones(nT*nV,1)];
+
+% Solve for the lease squares
 par = pinv(indep)*l;
-a = par(1);
-b = par(2);
-c = par(3);
-d = par(4);
+
+% rescale the coefficients
+coeffs = par*1e5;
+a = coeffs(1);
+b = coeffs(2)/1e6;
+c = coeffs(3)/1e6/1e6;
+d = coeffs(4);
 
 LossHat = NaN(size(Loss));
 for i = 1:length(Loss(:))
-    T_scaled = T(i)/1e6;
-    L_unscaled = a*V(i)^2 + 0*b*V(i)*T_scaled + c*T_scaled^2 + d;
-    LossHat(i) = L_unscaled*1e5;
+    LossHat(i) = a*V(i)^2 + b*V(i)*T(i) + c*T(i)^2 + d;
 end
 
 % output function
-EHA.LossCoeffs = par;
-EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,1*A);
+EHA = struct();
+EHA.LossCoeffs = [a b c d];
+EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A);
 
 if 0
     % Plot loss map
@@ -47,8 +53,8 @@ if 0
     figure, surf(V,T,Loss-LossHat), xlabel('Speed'), ylabel('Torque'), title('Difference')
     figure, surf(V,T,1e-7*T.^2), xlabel('Speed'), ylabel('Torque'), title('Electric Loss')
 end
-
-
+a=1;
+end
 
 function Loss = ehaLoss(Q,deltaP,maxFlow)
 % Define Pump Constants
