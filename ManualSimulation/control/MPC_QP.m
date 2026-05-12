@@ -14,14 +14,9 @@ if mod(timeInd,ctrl.horizonInd) == 1
     % E = transpose(X)*C*u*.01;
 
     % Unpack matrices
-    C = ctrl.MPC.C; H = ctrl.MPC.H; L = ctrl.MPC.L; M = ctrl.MPC.M;
-    Q = ctrl.MPC.EHA.Q; G = ctrl.MPC.EHA.G; R = ctrl.MPC.EHA.R;
-    Hu = H*L;
+    A = ctrl.MPC.A; Bx=ctrl.MPC.Bx; Bt = ctrl.MPC.Bt;
     x0 = states;
-
-    % Calculate A and B matrices
-    A = Hu'*C + Hu'*Q*Hu + Hu'*G + R;
-    B = x0'*M'*C + T'*H'*C + 2*x0'*M'*Q*Hu + 2*T'*H'*Q*Hu + x0'*M'*G + T'*H'*G;
+    B = x0'*Bx + T'*Bt;
 
     % Solve for u
     u = - (A+A') \ (B');

@@ -62,7 +62,7 @@ function Loss = ehaLoss(Q,deltaP,maxFlow)
 Wrpm = 2000; %revolutions per minute
 w = Wrpm.*(2*pi/60); % radians per second
 
-Scale =maxFlow/w*2*pi*1e6/107;
+Scale = maxFlow/w*2*pi*1e6/107 *1.2; % The 1.2 is to account for losses (oversize so we can actually hit the max flow at 2000 RPM)
 
 % Variable Displacement Axial Piston, 107 cc/rev (Pourmovahed et al. 1992b)
     D = 107; % cc/rev
@@ -108,7 +108,7 @@ else
 end
 
 % Power out with i^r losses
-P_L_elect = (1e-7)*T_Act^2*sign(T_Act);
+P_L_elect = (5e-5)*T_Act^2*sign(T_Act);
 P_out = w*T_Act + P_L_elect;
 
 P_in = Q*deltaP;

@@ -1,6 +1,6 @@
 function eval = getValveLoss(params,dyn)
 
-% Calculate volume and flow in each side
+%% Calculate volume and flow in each side
 [cap,rod] = params.hyd.getVolandFlow(params,dyn.states);
 
 switch params.runParams.drive
@@ -20,7 +20,7 @@ switch params.runParams.drive
         % This denotes the energy lost between event times
         % Thus there is one less loss entry than there are events
         loss = NaN(length(eventInds)-1,1);
-        %%
+        %
         for k = 1:length(eventInds)-1
             % Which pressure rail did we switch from?
             % params.hyd.ptoTorqueOptions is a matrix
@@ -40,7 +40,6 @@ switch params.runParams.drive
             % Find open valve loss from ind1 to ind2
             cap.steadyLoss(k) = openvalveLoss(params,cap,switchMap.valveConstant,ind1,ind2);
             rod.steadyLoss(k) = openvalveLoss(params,rod,switchMap.valveConstant,ind1,ind2);
-
         end
 
         % Sum up losses

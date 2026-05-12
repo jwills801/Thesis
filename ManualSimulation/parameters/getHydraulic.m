@@ -29,8 +29,7 @@ end
 % load or calculate switching losses
 switch runParams.drive
     case 'DHD'
-        switchMap = makeSwitchLossMap(hyd);
-        save("parameters/SwitchMap.mat","switchMap")
+        switchMap = makeSwitchLossMap(hyd); save("parameters/SwitchMap.mat","switchMap")
         % load("SwitchMap.mat")
         hyd.switchMap = switchMap;
     case 'EHA'

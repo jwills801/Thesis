@@ -19,11 +19,11 @@ u_cont = -1*(Kp*thetaDot + Ki*theta);
 % if it hasnt been very long, and we are using DHD, then use the previous control index
 switch params.runParams.drive
     case 'DHD'
+        ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
         if timeSinceSwitch < .21
             uInd = uInd_history(end);
         else
             % Discretize
-            ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
             [~,uInd] = min(abs(u_cont-ptoTorqueOptions));
         end
         out.controlValue = ptoTorqueOptions(uInd);

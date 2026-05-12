@@ -1,4 +1,4 @@
-function plotAll(params,wave,ctrl,dyn,eval)
+function eval = plotAll(params,wave,ctrl,dyn,eval)
 
 
 
@@ -44,10 +44,14 @@ figure, plot(dyn.t,theta*180/pi), xlabel('Time [s]'), ylabel('Flap Position [deg
 % For the EHA, show the losses as if the convex map was used
 eha_str_loss = '';
 eha_str_pow = '';
+eha_str_RGP = '';
 switch params.runParams.drive
     case 'EHA'
-        eha_str_loss = ['(Estimated ', num2str(eval.aveLossHat/1e3,3), ' kW)'];
-        eha_str_pow = ['(Estimated ', num2str(eval.aveElecPowHat/1e3,3), ' kW)'];
+        eha_str_loss = [' (Estimated ', num2str(eval.aveLossHat/1e3,3), ' kW)'];
+        eval.aveElecPowHat = eval.aveMechPow - eval.aveLossHat;
+        eha_str_pow = [' (Estimated ', num2str(eval.aveElecPowHat/1e3,3), ' kW)'];
+        eval.elecRGP_hat = eval.aveElecPowHat/ctrl.optTraj.avePow;
+        eha_str_RGP = [' (Estimated ', num2str(eval.elecRGP_hat,2), ')'];
 end
 
 % Display the average powers
@@ -56,3 +60,8 @@ disp(['Optimal Power = ', num2str(ctrl.optTraj.avePow/1e3,3), 'kW']);
 disp(['Mechanical Power = ', num2str(eval.aveMechPow/1e3,3), ' kW']);
 disp(['Drivetrain Loss = ', num2str(eval.aveLoss/1e3,3), ' kW ',eha_str_loss]);
 disp(['Electric Power = ', num2str(eval.aveElecPow/1e3,3), ' kW ',eha_str_pow]);
+disp('Relative Generated Power:')
+eval.mechRGP = eval.aveMechPow/ctrl.optTraj.avePow;
+eval.elecRGP = eval.aveElecPow/ctrl.optTraj.avePow;
+    disp(['      Mechanical: ', num2str(eval.mechRGP,2)])
+    disp(['      Electrical: ',num2str(eval.elecRGP,2),eha_str_RGP]);

@@ -20,19 +20,12 @@ switch params.runParams.controller
 
         % Other Matrices
         [L,C] = getUtilityMatrices(m,ctrl.horizonInd);
+        
+        % Output matrices (u^* = -inv(A+A')*B')
+        % where B = x0'*Bx + T'*Bt
+        ctrl.MPC = MPC_EHA(params,M,H,L,C);
 
-        % save output to a structure
-        ctrl.MPC.m = m;
-        ctrl.MPC.M = M;
-        ctrl.MPC.H = H;
-        ctrl.MPC.L = L;
-        ctrl.MPC.C = C;
-
-        switch params.runParams.drive
-            case 'EHA'
-                ctrl.MPC.EHA = MPC_EHA(params,ctrl.MPC);
-        end
-
+        
     case 'MPC_Astar'
         % Number of A star time steps
         ctrl.m_Astar = 5;
@@ -40,7 +33,7 @@ switch params.runParams.controller
         % unwrap useful parameters
         m = ctrl.numHorizons; % This is the terminal cost horizon
         n = ctrl.horizonInd;
-        dt = ctrl.timeHorizon;
+        dt = params.simu.dt;
         
         % Precompute Matrices for mechanical energy calculation
         [M_local,H_local] = getTransition(params,n);
@@ -69,15 +62,17 @@ end
 
 
 function [M,H] = getTransition(params,N)
-
-% Forward Euler
-Phi = eye(size(params.phys.sys.A)) + params.phys.sys.A * params.simu.dt;
-Gamma = params.phys.sys.B * params.simu.dt;
-
-% Zero Order Hold
+% unpack parameters
 A = params.phys.sys.A;
 B = params.phys.sys.B;
 dt = params.simu.dt;
+
+% Two options for discretizing: Forward euler and ZOH
+% Forward Euler
+Phi = eye(size(A)) + A * dt;
+Gamma = B * dt;
+
+% Zero Order Hold
 Phi = expm(A * dt);
 Gamma = integral(@(s) expm(A*s), 0, dt, 'ArrayValued', true) * B;
 
@@ -220,24 +215,37 @@ end
 close(bar)
 end
 
-function out = MPC_EHA(params,in)
+function out = MPC_EHA(params,M,H,L,C)
 
-% Choose whether to include losses in the controller
-if params.runParams.considerLosses
-    a = params.hyd.EHA.LossCoeffs(1);
-    b = params.hyd.EHA.LossCoeffs(2);
-    c = params.hyd.EHA.LossCoeffs(3);
-    d = params.hyd.EHA.LossCoeffs(4);
-else
-    a = 0; b = 0; c = 0; d = 0;
+% If it is DHD or we dont want to included losses then assign all the
+% EHA loss coeffs to zero
+a = 0; b = 0; c = 0; d = 0;
+
+% If it is EHA and we want to use loss coeffs, use the loss coefss
+switch params.runParams.drive
+    case 'EHA'
+        % Choose whether to include losses in the controller
+        if params.runParams.considerLosses
+            a = params.hyd.EHA.LossCoeffs(1);
+            b = params.hyd.EHA.LossCoeffs(2);
+            c = params.hyd.EHA.LossCoeffs(3);
+            d = params.hyd.EHA.LossCoeffs(4);
+        end
 end
 
 % Construct matrices from the loss coeffs
-out = struct();
-out.Q = in.C * diag(a*ones(in.m,1)) * in.C';
-out.G = in.C * diag(b*ones(in.m,1));
-out.R = diag(c*ones(in.m,1));
-out.D = d;
+out.m = size(L,2);
+Q = C * diag(a*ones(out.m,1)) * C';
+G = C * diag(b*ones(out.m,1));
+R = diag(c*ones(out.m,1));
+D = d;
+
+% Output matrices (u^* = -inv(A+A')*B')
+% where B = x0'*Bx + T'*Bt
+Hu = H*L;
+out.A = Hu'*C + Hu'*Q*Hu + Hu'*G + R;
+out.Bx = M'*C + 2*M'*Q*Hu + M'*G;
+out.Bt = H'*C + 2*H'*Q*Hu + H'*G;
 
 end
 

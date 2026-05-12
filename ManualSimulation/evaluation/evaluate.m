@@ -22,6 +22,11 @@ end
 
     % Electrical output
     eval.aveElecPow = eval.aveMechPow - eval.aveLoss;
-    eval.aveElecPowHat = eval.aveMechPow - eval.aveLossHat;
+
+    switch params.runParams.drive
+    case {'DHD', 'PassivePump'}
+        eval.aveElecPow = 0.85*eval.aveElecPow;
+        eval.aveLoss = eval.aveLoss + 0.15*eval.aveElecPow;
+    end
 
 end
