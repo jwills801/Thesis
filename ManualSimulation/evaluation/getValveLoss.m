@@ -69,6 +69,7 @@ eval.TotalLoss = sum(loss);
 eval.loss = loss;
 eval.TotalLossAfterRamp = sum(lossAfterRamp);
 eval.aveLoss = eval.TotalLossAfterRamp / (params.simu.finalTime - params.simu.rampTime);
+eval.aveLossHat = NaN;
 
 % Optional plots
 if 0

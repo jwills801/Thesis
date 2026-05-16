@@ -19,7 +19,7 @@ else
     nodes = initlizeNodes(nU,states,params,ctrl,k,uIndPrev);
 
     % Begin Astar algorith 
-    flag = 0; iter = 0; iterMax = 1e4;
+    flag = 0; iter = 0; iterMax = 1e3;
     while flag == 0
 
         % sort nodes
@@ -27,7 +27,17 @@ else
         
         % reorder nodes
         nodes = nodes(idx);
-        % [nodes.cost]
+        
+        % % If even the best node has NaN, then weve hit the end stop
+        % if ~isfinite(nodes(1).cost)
+        %     flag = -1;
+        %     if states(2) > 30 || states(1) > 1.5
+        %         [~,uInd] = min(params.hyd.ptoForceOptions(:));
+        %     else
+        %         [~,uInd] = max(params.hyd.ptoForceOptions(:));
+        %     end
+        %     nodes(1).history(1) = uInd;
+        % end
 
         % Get info about this node
         d = length(nodes(1).history);
@@ -60,7 +70,7 @@ else
         % Dont do too many iterations
         iter = iter +1;
         if iter>iterMax
-            flag = -1;
+            flag = -1
         end
     end % while loop
 

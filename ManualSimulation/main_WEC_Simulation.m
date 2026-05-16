@@ -36,7 +36,7 @@ switch runParams.drive
         runParams.rodArea = (0.0254*2)^2*pi;
         runParams.capArea = 1.5*runParams.rodArea;
     case 'EHA'
-        runParams.considerLosses = 1;
+        runParams.considerLosses = 0;
         runParams.rodArea = (0.0254*8)^2*pi;
         runParams.capArea = runParams.rodArea;
     case 'DHD'
@@ -65,7 +65,7 @@ ctrl = getControl(params,wave);
 addpath("dynamics/")
 dyn = timeLoop(params,wave,ctrl);
 
-% Evaluate
+%% Evaluate
 addpath("evaluation/")
 eval = evaluate(params,dyn);
 

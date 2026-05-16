@@ -1,87 +1,71 @@
 clear, close all
-% Define the master list of cases
+%% 1. Define the Master Test Matrix
 caseList = {
-    'PassivePump', 'CoulombDamping';
-    'EHA',         'PI';
-    'EHA',         'MPC_QP';
-    'DHD',         'PI';
-    'DHD',         'MPC_Astar';
-    'DHD',         'MPC_QP'
+    'PassivePump', 'CoulombDamping', 0;
+    'EHA',         'PI',             0;
+    'EHA',         'MPC_QP',         0;
+    'DHD',         'PI',             2;
+    'DHD',         'PI',             3;
+    'DHD',         'PI',             4;
+    'DHD',         'MPC_Astar',      2;
+    'DHD',         'MPC_Astar',      3;
+    'DHD',         'MPC_Astar',      4;
+    'DHD',         'MPC_QP',         2;
+    'DHD',         'MPC_QP',         3;
+    'DHD',         'MPC_QP',         4;
 };
 
-% Initialize results structure if it doesn't exist
-eval_results = struct();
+% Create the base table
+simMatrix = cell2table(caseList, 'VariableNames', {'Drivetrain', 'Controller', 'PressureRails'});
 
-for i = 4%:size(caseList, 1)
+%  Preallocate scalar columns
+simMatrix.MechRGP = NaN(height(simMatrix), 1);
+simMatrix.ElecRGP = NaN(height(simMatrix), 1);
+
+% Preallocate cell columns to hold full matrices of varying sizes
+% simMatrix.RawMatrixData = cell(height(simMatrix), 1);
+
+%% 2. Loop Through and Populate Table
+for i = 8%1:height(simMatrix)
     runParams = struct();
     runParams.drive = caseList{i, 1};
     runParams.controller = caseList{i, 2};
+    % Extract inputs
+    drivetrain     = simMatrix.Drivetrain{i};
+    controller     = simMatrix.Controller{i};
+    pressure_rails = simMatrix.PressureRails(i);
     
-    % Determine pressure rails to run
-    if strcmp(runParams.drive, 'DHD')
-        railsToRun = [2, 3, 4];
-        railsToRun = 3;
-    elseif strcmp(runParams.drive, 'PassivePump')
-        railsToRun = 2;
-    else
-        railsToRun = 0; % Dummy value for non-DHD cases
-    end
-    
-    for p = railsToRun
-        % Update simulation parameters
-        % (Assuming your model uses these workspace variables)
-        if p == 2
+        if pressure_rails == 2
             runParams.pressureRails = [0 35]*1e6;
-        elseif p == 3
+        elseif pressure_rails == 3
             runParams.pressureRails = [0 17 35]*1e6;
-        elseif p == 4
-            runParams.pressureRails = [0 17 22 35]*1e6;
-        elseif p == 5
-            runParams.pressureRails = [0 8 17 26 35]*1e6;
+        elseif pressure_rails == 4
+            runParams.pressureRails = [0 8 27 35]*1e6;
+        elseif pressure_rails == 5
+            runParams.pressureRails = [0 3.5 18.5 29 35]*1e6;
         end
+
         disp('---------------------------------------------------------')
-        fprintf('Running: %s with %s (Rails: %d)...\n', runParams.drive, runParams.controller, p);
-        
-        main_WEC_Simulation;
-
-        % Generate a valid field name for the structure
-        % e.g., DHD_MPC_QP_3rails
-        caseName = sprintf('%s_%s', runParams.drive, runParams.controller);
-        if p > 0
-            caseName = sprintf('%s_%drails', caseName, p);
+        if pressure_rails == 0
+            fprintf('Running: %s with %s ...\n', runParams.drive, runParams.controller);
+        else
+            fprintf('Running: %d rail %s with %s ...\n', pressure_rails, runParams.drive, runParams.controller);
         end
         
-        % Store results in the eval structure
-        eval_results.(caseName) = eval; 
-        eval_results.(caseName).status = 'Completed'; % Placeholder
-    end
-end
-
-disp('All simulation cases processed.');
-
-%% Make a table from the results
-% Get all case names from the structure
-caseNames = fieldnames(eval_results);
-
-% Preallocate cell arrays for the table columns
-CaseName = caseNames;
-MechRGP = zeros(length(caseNames), 1);
-ElecRGP = zeros(length(caseNames), 1);
-
-% Extract values from each case
-for i = 1:length(caseNames)
-    currentCase = caseNames{i};
+    main_WEC_Simulation;
     
-    % Access the nested eval structure for the current case
-    % Note: Adjusting the path to eval_results.(currentCase).eval 
-    % based on your typical simulation data logging
-    MechRGP(i) = eval_results.(currentCase).mechRGP;
-    ElecRGP(i) = eval_results.(currentCase).elecRGP;
+    % Assign scalars
+    simMatrix.MechRGP(i) = eval.mechRGP;
+    simMatrix.ElecRGP(i) = eval.elecRGP;
+    
+    % Assign full matrix into the cell column using curly braces {}
+    % simMatrix.RawMatrixData{i} = eval.fullMatrix; 
 end
 
-% Create the final table
-resultsTable = table(CaseName, MechRGP, ElecRGP);
+%% 3. Display and Access Data
+disp('--- Final Test Matrix ---');
+disp(simMatrix); % Displays text and scalars cleanly
 
-% Display the table in the Command Window
-disp(resultsTable);
+% How to extract the matrix from Row 4:
+% row4Matrix = simMatrix.RawMatrixData{4};
 

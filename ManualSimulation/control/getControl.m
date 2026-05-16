@@ -3,7 +3,7 @@ function ctrl = getControl(params,wave)
 %% Define parameters for all controllers
 ctrl.timeHorizon = .2; % Length of a control step
 ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
-ctrl.numHorizons = params.simu.peakPeriod*2.5/ctrl.timeHorizon;
+ctrl.numHorizons = 2.5*params.simu.peakPeriod/ctrl.timeHorizon;
 
 %% Get optimal trajectory and energy
 optTraj = getOptimal(params,wave);
@@ -235,9 +235,9 @@ end
 
 % Construct matrices from the loss coeffs
 out.m = size(L,2);
-Q = C * diag(a*ones(out.m,1)) * C';
+Q = diag(repmat([a 0 0 0],1,size(L,1)));
 G = C * diag(b*ones(out.m,1));
-R = diag(c*ones(out.m,1));
+R = L'* diag(c*ones(size(L,1),1)) * L;
 D = d;
 
 % Output matrices (u^* = -inv(A+A')*B')

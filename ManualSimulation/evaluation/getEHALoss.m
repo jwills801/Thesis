@@ -19,7 +19,7 @@ lossAfterRamp = loss(dyn.t > params.simu.rampTime);
 % Calculate loss from the convex approximation
 a = params.hyd.EHA.LossCoeffs(1); b = params.hyd.EHA.LossCoeffs(2);
 c = params.hyd.EHA.LossCoeffs(3); d = params.hyd.EHA.LossCoeffs(4);
-lossHat = a*vel.^2 + b*vel.*dyn.u + c*dyn.u.^2 + d;
+lossHat = a*thetaDot.^2 + b*thetaDot.*dyn.u + c*dyn.u.^2 + d;
 lossHatAfterRamp = lossHat(dyn.t > params.simu.rampTime);
 % figure, plot(dyn.t,loss,dyn.t,lossHat), legend('Real','Approximation')
 

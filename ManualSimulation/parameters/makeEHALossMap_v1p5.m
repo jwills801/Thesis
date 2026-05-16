@@ -1,17 +1,16 @@
-function EHA = makeEHALossMap(A,vMax)
+function EHA = makeEHALossMap_v1p5(A,vMax)
 %%
-nw = 100;
-w_vals = linspace(-.5,.5,nw);
+nV = 100;
+v_vals = linspace(-1,1,nV);
 
 nT = 100;
 T_vals = linspace(-1,1,nT)*3e7;
 
-[W,T] = ndgrid(w_vals,T_vals);
+[V,T] = ndgrid(v_vals,T_vals);
 
-Loss = NaN(size(W));
-for i = 1:length(W(:))
-    V = W(i)*2.7574;
-    Q = V*A;
+Loss = NaN(size(V));
+for i = 1:length(V(:))
+    Q = V(i)*A;
     F = T(i)/2.7574;
     deltaP = F/A;
     Loss(i) = ehaLoss(Q,deltaP,vMax*A);
@@ -19,12 +18,12 @@ end
 
 % Least Squares
 % Reshape vectors for least squares and scale
-w = reshape(W,[nw*nT,1]);
-t = reshape(T,[nw*nT,1])/1e6;
-l = reshape(Loss,[nw*nT,1])/1e5;
+v = reshape(V,[nV*nT,1]);
+t = reshape(T,[nV*nT,1])/1e6;
+l = reshape(Loss,[nV*nT,1])/1e5;
 
 % Arrange independent variables
-indep = [w.^2, w.*t, t.^2, ones(nT*nw,1)];
+indep = [v.^2, v.*t, t.^2, ones(nT*nV,1)];
 
 % Solve for the lease squares
 par = pinv(indep)*l;
@@ -38,7 +37,7 @@ d = coeffs(4);
 
 LossHat = NaN(size(Loss));
 for i = 1:length(Loss(:))
-    LossHat(i) = a*W(i)^2 + b*W(i)*T(i) + c*T(i)^2 + d;
+    LossHat(i) = a*V(i)^2 + b*V(i)*T(i) + c*T(i)^2 + d;
 end
 
 % output function
@@ -46,13 +45,13 @@ EHA = struct();
 EHA.LossCoeffs = [a b c d];
 EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A);
 
-if 0
+if 1
     % Plot loss map
     levels = round(linspace(min(Loss(:)),max(Loss(:)),10)/1e4)*1e4/1e3;
-    figure, contour(W,T,LossHat/1e3,levels,'showtext','on'), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Estimate')
-    figure, contour(W,T,Loss/1e3,levels,'showtext','on'), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Constant Speed')
-    % figure, surf(W,T,Loss-LossHat), xlabel('Speed'), ylabel('Torque'), title('Difference')
-    % figure, surf(W,T,1e-7*T.^2), xlabel('Speed'), ylabel('Torque'), title('Electric Loss')
+    % figure, contour(V,T,LossHat/1e3,levels,'showtext','on'), xlabel('Speed'), ylabel('Torque'), title('Estimate')
+    figure, contour(V,T,Loss/1e3,levels,'showtext','on'), xlabel('Speed'), ylabel('Torque'), title('Constant Displacement')
+    % figure, surf(V,T,Loss-LossHat), xlabel('Speed'), ylabel('Torque'), title('Difference')
+    % figure, surf(V,T,1e-7*T.^2), xlabel('Speed'), ylabel('Torque'), title('Electric Loss')
 end
 a=1;
 end
@@ -80,23 +79,12 @@ mu=(32e-6)*870;
 B = 1.7e9;
 rho = 870;
 
-% Calculate fracDisp assuming it is a posative value
-fracDisp = (Q + sign(deltaP)*Scale*abs(d*Cs*(deltaP)/mu) + sign(deltaP)*Scale*abs(d^(2/3)*Cst*(2*(deltaP)/rho)^.5))/(w*d*Scale-sign(deltaP)*Scale*abs(d*w*deltaP/B));
-if fracDisp <= 0 % if the assumption that fracdisp is + is incorrect, recalculate fracDisp assuming fracDisp is -
-    fracDisp = (Q + sign(deltaP)*Scale*abs(d*Cs*(deltaP)/mu) + sign(deltaP)*Scale*abs(d^(2/3)*Cst*(2*(deltaP)/rho)^.5))/(w*d*Scale+sign(deltaP)*Scale*abs(d*w*deltaP/B));
-end
-
-% Check if fracDisp was calculated correctly
-% Calculate the error due to the fractional displacement calculation
-% If I use the fracDisp I calculated to solve for Q_Act (which was given)
-% Do I get the same values?
+fracDisp = 1;
 QLoss = Scale*abs(d*Cs*(deltaP)/mu) + Scale*abs(fracDisp*d*w*(deltaP)/B) + Scale*abs(d^(2/3)*Cst*(2*(deltaP)/rho)^.5);
-Q_Act_calc = w*d*fracDisp*Scale - sign(deltaP)*QLoss;
+w = (Q + sign(deltaP)*QLoss) / (d*fracDisp*Scale);
 
 T_Ideal = deltaP*d*fracDisp*Scale;
 TLoss = Scale*(  abs(d*Cv*mu*w) + abs(d*(deltaP)*Cf) + abs(fracDisp*Ch*w^2*rho*d^(5/3)/2)  );
-
-Q_Ideal = fracDisp*d*w*Scale;
 T_Act = T_Ideal + sign(w)*TLoss; % |T_Act| needs be < |T_Ideal|
 
 % Power out with 90% effiency
