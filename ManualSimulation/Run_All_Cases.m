@@ -1,7 +1,7 @@
 clear, close all
 %% 1. Define the Master Test Matrix
 caseList = {
-    'PassivePump', 'CoulombDamping', 0;
+    'PassivePump', 'CoulombDamping', 2;
     'EHA',         'PI',             0;
     'EHA',         'MPC_QP',         0;
     'DHD',         'PI',             2;
@@ -26,33 +26,26 @@ simMatrix.ElecRGP = NaN(height(simMatrix), 1);
 % simMatrix.RawMatrixData = cell(height(simMatrix), 1);
 
 %% 2. Loop Through and Populate Table
-for i = 8%1:height(simMatrix)
+for i = 1%1:height(simMatrix)
     runParams = struct();
     runParams.drive = caseList{i, 1};
     runParams.controller = caseList{i, 2};
-    % Extract inputs
-    drivetrain     = simMatrix.Drivetrain{i};
-    controller     = simMatrix.Controller{i};
-    pressure_rails = simMatrix.PressureRails(i);
-    
-        if pressure_rails == 2
-            runParams.pressureRails = [0 35]*1e6;
-        elseif pressure_rails == 3
-            runParams.pressureRails = [0 17 35]*1e6;
-        elseif pressure_rails == 4
-            runParams.pressureRails = [0 8 27 35]*1e6;
-        elseif pressure_rails == 5
-            runParams.pressureRails = [0 3.5 18.5 29 35]*1e6;
-        end
+    runParams.pressure_rails = caseList{i, 3};
 
         disp('---------------------------------------------------------')
-        if pressure_rails == 0
+        if runParams.pressure_rails == 0
             fprintf('Running: %s with %s ...\n', runParams.drive, runParams.controller);
         else
-            fprintf('Running: %d rail %s with %s ...\n', pressure_rails, runParams.drive, runParams.controller);
+            fprintf('Running: %d rail %s with %s ...\n', runParams.pressure_rails, runParams.drive, runParams.controller);
         end
-        
-    main_WEC_Simulation;
+switch runParams.drive
+    case 'PassivePump'
+        runParams.highPressure = OptPressure(runParams)*1e6;
+    case 'DHD'
+        runParams.highPressure = 35*1e6;
+end
+% runParams.highPressure = 35*1e6;
+main_WEC_Simulation;
     
     % Assign scalars
     simMatrix.MechRGP(i) = eval.mechRGP;
@@ -68,4 +61,33 @@ disp(simMatrix); % Displays text and scalars cleanly
 
 % How to extract the matrix from Row 4:
 % row4Matrix = simMatrix.RawMatrixData{4};
+
+function P  = OptPressure(runParams)
+    iter = 0; itermax =10;
+    flag = 0;
+    P = 30; Pprev = 0; Jprev = 0;
+
+    while flag ==0
+    runParams.highPressure = P*1e6;
+    main_WEC_Simulation; close all
+    J = eval.elecRGP*100;
+
+    Pnew = P + 5*(J-Jprev)/(P-Pprev)
+
+    % If we have converged, then leave the loop
+    if (abs(P-Pprev) < 1) && (abs(J-Jprev) < 1)
+        flag = 1;
+    end
+
+    % update for next cycle
+    Jprev = J; Pprev = P; P = Pnew;
+
+    % If we have too many iterations then leave
+    iter = iter +1;
+    if iter > itermax
+        flag = -1;
+        disp('Max iterations reached on pressure optimization')
+    end
+    end
+end
 

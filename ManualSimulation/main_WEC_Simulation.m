@@ -33,7 +33,7 @@
 % Assign parameters based on drivetrain selection
 switch runParams.drive
     case 'PassivePump'
-        runParams.rodArea = (0.0254*2)^2*pi;
+        runParams.rodArea = (0.0254*6)^2*pi;
         runParams.capArea = 1.5*runParams.rodArea;
     case 'EHA'
         runParams.considerLosses = 0;

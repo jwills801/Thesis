@@ -18,8 +18,17 @@ hyd.L_retract = hyd.L_equilib - hyd.stroke/2; % Length of cylinder at full retra
 
 switch runParams.drive
     case {'DHD', 'PassivePump'}
-        % Set Valued Control Inputs
-        hyd.pressureRails = runParams.pressureRails;
+        if runParams.pressure_rails == 2
+            hyd.pressureRails = [0 35]*1e6;
+        elseif runParams.pressure_rails == 3
+            hyd.pressureRails = [0 17 35]*1e6;
+        elseif runParams.pressure_rails == 4
+            hyd.pressureRails = [0 8 27 35]*1e6;
+        elseif runParams.pressure_rails == 5
+            hyd.pressureRails = [0 3.5 18.5 29 35]*1e6;
+        end
+        hyd.pressureRails = hyd.pressureRails/35e6*runParams.highPressure;
+        
         capForceOptions = hyd.pressureRails * hyd.capArea;
         rodForceOptions = hyd.pressureRails * hyd.rodArea;
         hyd.ptoForceOptions = capForceOptions'-rodForceOptions;
