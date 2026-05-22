@@ -26,7 +26,7 @@ simMatrix.ElecRGP = NaN(height(simMatrix), 1);
 % simMatrix.RawMatrixData = cell(height(simMatrix), 1);
 
 %% 2. Loop Through and Populate Table
-for i = 1%1:height(simMatrix)
+for i = 7%1:height(simMatrix)
     runParams = struct();
     runParams.drive = caseList{i, 1};
     runParams.controller = caseList{i, 2};
@@ -39,10 +39,10 @@ for i = 1%1:height(simMatrix)
             fprintf('Running: %d rail %s with %s ...\n', runParams.pressure_rails, runParams.drive, runParams.controller);
         end
 switch runParams.drive
-    case 'PassivePump'
-        runParams.highPressure = OptPressure(runParams)*1e6;
-    case 'DHD'
-        runParams.highPressure = 35*1e6;
+    case {'DHD','PassivePump'}
+        % runParams.highPressure = OptPressure(runParams)*1e6;
+    %case 
+    %    runParams.highPressure = 35*1e6;
 end
 % runParams.highPressure = 35*1e6;
 main_WEC_Simulation;

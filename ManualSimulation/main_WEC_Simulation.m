@@ -35,6 +35,7 @@ switch runParams.drive
     case 'PassivePump'
         runParams.rodArea = (0.0254*6)^2*pi;
         runParams.capArea = 1.5*runParams.rodArea;
+        runParams.highPressure = 20.6*1e6;
     case 'EHA'
         runParams.considerLosses = 0;
         runParams.rodArea = (0.0254*8)^2*pi;
@@ -43,6 +44,7 @@ switch runParams.drive
         runParams.considerLosses = 1;
         runParams.rodArea = (.0254*6)^2*pi; % m^2: Radius squared times pi
         runParams.capArea = 1.5*runParams.rodArea; % m^2: Area ratio times rod Area
+        runParams.highPressure = 33.3*1e6;
 end
 
 
@@ -61,7 +63,7 @@ wave = generateExcitingTorque(params);
 addpath("control/")
 ctrl = getControl(params,wave);
 
-% Simulate Dynamics
+%% Simulate Dynamics
 addpath("dynamics/")
 dyn = timeLoop(params,wave,ctrl);
 

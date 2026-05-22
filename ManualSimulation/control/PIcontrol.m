@@ -1,5 +1,6 @@
 function out = PIcontrol(params,ctrl,states,uInd_history)
 % uInd_history is a vectory of the previous control inputs
+if isempty(uInd_history), uInd_history = 1; end
 
 % Calculate the amount of time since the last switch
 timeInd = length(uInd_history)+1;
@@ -21,6 +22,8 @@ switch params.runParams.drive
     case 'DHD'
         ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);
         if timeSinceSwitch < .21
+            uInd = uInd_history(end);
+        elseif abs(u_cont-ptoTorqueOptions(uInd_history(end))) < 1e6
             uInd = uInd_history(end);
         else
             % Discretize

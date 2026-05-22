@@ -27,17 +27,6 @@ else
         
         % reorder nodes
         nodes = nodes(idx);
-        
-        % % If even the best node has NaN, then weve hit the end stop
-        % if ~isfinite(nodes(1).cost)
-        %     flag = -1;
-        %     if states(2) > 30 || states(1) > 1.5
-        %         [~,uInd] = min(params.hyd.ptoForceOptions(:));
-        %     else
-        %         [~,uInd] = max(params.hyd.ptoForceOptions(:));
-        %     end
-        %     nodes(1).history(1) = uInd;
-        % end
 
         % Get info about this node
         d = length(nodes(1).history);
@@ -49,7 +38,6 @@ else
             flag = 1;
             break
         end
-
 
         % look at all the possible options from this node
         for uInd = 1:nU
@@ -80,7 +68,18 @@ else
     % Efficiency
     fullTree = (nU^ctrl.m_Astar-1)/(nU-1);
     AStar_eff = iter/fullTree;
-    a=1;
+    
+    % if (params.simu.time(fineTimeInd) < 61) && (params.simu.time(fineTimeInd) > 60)
+    %     nodes(1).cost
+    %     [cap,rod] = params.hyd.getVolandFlow(params,nodes(1).xf)
+    %     [min(params.hyd.switchMap.velA_vals), max(params.hyd.switchMap.velA_vals)]
+    %     [min(params.hyd.switchMap.vol_vals), max(params.hyd.switchMap.vol_vals)]
+    %     a=1;
+    % end
+
+    if ~isfinite(nodes(1).cost)
+        params.simu.time(fineTimeInd)
+    end
 
 end
 

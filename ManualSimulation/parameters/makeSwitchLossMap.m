@@ -11,7 +11,7 @@ PR = hyd.pressureRails;
 
 % Fluid properties
 beta = 1.8e9; % Pa: bulk modulus
-alpha = 0;% .03; % Percent entrained air
+alpha = .03; % Percent entrained air
 
 % Precompute hydraulic effort vectors
 p0 = 101325; % Pa, atmospheric
@@ -63,7 +63,7 @@ for m = 1:length(vol_vals)
                     % Loop over delay values
                     % Initialize loss vector for each delay
                     Eloss_delay(:) = NaN;
-                    for ii = 4% 1:length(delayvals)
+                    for ii = 1:length(delayvals)
                         delay = round(delayvals(ii));
 
                         % Get valve trajectories
@@ -101,13 +101,19 @@ for m = 1:length(vol_vals)
                         phi_l = interp1(HydraulicEffort.Pvals,HydraulicEffort.phivals,PR(k)+p0);
                         Loss_h = Q_C.*(phi_h-phi_A);
                         Loss_l = Q_O.*(phi_l-phi_A);
-                        Eloss_delay(ii) =  sum(Loss_h+Loss_l)*dt;
-                        if 0%m == 1 && i == 5 && j == 2 && k == 3 && ii == 4
+
+                        if min(PA) > -1e5
+                            Eloss_delay(ii) =  sum(Loss_h+Loss_l)*dt;
+                        else
+                            Eloss_delay(ii) =  NaN;
+                        end
+                        if  0% j == 1 && k == 2 && i == 11 && m == 1 && ii == 2
                             figure, title(['Delay value: ',num2str(delay)])
                             subplot(121), plot(tspan,PA)
                             subplot(122), plot(tspan,xon,tspan,xoff)
 
                             figure, plot(tspan(1:end-1),Loss_h,tspan(1:end-1),Loss_l), legend('Closing','Opening')
+                            Eloss_delay(ii)
                             min(Eloss_delay)
                         end
                     end
@@ -129,6 +135,8 @@ out.vol_vals = vol_vals;
 out.PR = PR;
 out.finalTime = finalTime;
 out.hoseVolume = hoseVolume;
+
+figure, surf(velA_vals,vol_vals,squeeze(Eloss(1,2,:,:)))
 end
 
 
@@ -204,6 +212,7 @@ function [beta_mix, W, rv] = oil_comp(P, alpha, beta_oil)
 
     %Note: beta_mix as calculated by Hans Barkei
     beta_mix = rv*(1+alpha)./(1./(e*beta_oil)+alpha./(gamma*Pt.*r.^(1/gamma+1)));
+    % beta_mix = real(beta_mix); % This was aded to allow the code to run for negative pressures
     
     El=beta_oil.*(e-(1+Pg./beta_oil))+Pt.*(e-1);           %Energy in liquid
     Eg=P./(gamma-1).*(1-r.^(1/gamma-1));          %Energy in gas

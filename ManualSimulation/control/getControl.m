@@ -28,7 +28,7 @@ switch params.runParams.controller
         
     case 'MPC_Astar'
         % Number of A star time steps
-        ctrl.m_Astar = 5;
+        ctrl.m_Astar = 8;
 
         % unwrap useful parameters
         m = ctrl.numHorizons; % This is the terminal cost horizon
