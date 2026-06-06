@@ -14,17 +14,15 @@ wave.spectrum = getSpectrum(wave.w,...
     params.simu.peakPeriod,...
     params.simu.sigWaveHeight);
 
+% Regular Waves
+wave.spectrum.S_w(:) = 0;
+[~,wInd] = min(abs(wave.spectrum.w - 2*pi/params.simu.peakPeriod));
+wave.spectrum.S_w(wInd) = params.simu.sigWaveHeight^2;
+
 % Calculate average wave resource
 wave.avePower = calculateWavePower(params,wave);
 
 wave.torque = getTorqueTimeSeries(params,wave);
-
-% Regular Waves
-% TexcMag = 2e6;
-% [~,rampStartInd] = min(abs(t-params.rampTime));
-% ramp = 0.5*(1+cos(pi+pi*t/params.rampTime)).*(t<params.rampTime) + (t>=params.rampTime);
-% Texc = TexcMag*sin(t*2*pi/params.period).*ramp;
-
 
 end
 

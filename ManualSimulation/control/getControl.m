@@ -1,10 +1,5 @@
 function ctrl = getControl(params,wave)
 
-%% Define parameters for all controllers
-ctrl.timeHorizon = .2; % Length of a control step
-ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
-ctrl.numHorizons = 2.5*params.simu.peakPeriod/ctrl.timeHorizon;
-
 %% Get optimal trajectory and energy
 optTraj = getOptimal(params,wave);
 ctrl.optTraj = optTraj;
@@ -14,6 +9,10 @@ switch params.runParams.controller
     case 'Coulomb Damping'
     case 'PI'
     case'MPC_QP'
+        ctrl.timeHorizon = 5*params.simu.dt; % Length of a control step
+        ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
+        ctrl.numHorizons = 2.5*params.simu.peakPeriod/ctrl.timeHorizon;
+
         % Precompute Transition Matrices
         m = ctrl.numHorizons;
         [M,H] = getTransition(params,m*ctrl.horizonInd);
@@ -26,9 +25,13 @@ switch params.runParams.controller
         ctrl.MPC = MPC_EHA(params,M,H,L,C);
 
         
-    case 'MPC_Astar'
+    case {'MPC_Astar','MPC_Astar_cont'}
+        ctrl.timeHorizon = .2; % Length of a control step
+        ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
+        ctrl.numHorizons = 2.5*params.simu.peakPeriod/ctrl.timeHorizon;
+
         % Number of A star time steps
-        ctrl.m_Astar = 8;
+        ctrl.m_Astar = 5;
 
         % unwrap useful parameters
         m = ctrl.numHorizons; % This is the terminal cost horizon

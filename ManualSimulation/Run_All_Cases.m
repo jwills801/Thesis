@@ -7,6 +7,7 @@ caseList = {
     'DHD',         'PI',             2;
     'DHD',         'PI',             3;
     'DHD',         'PI',             4;
+    'DHD',         'MPC_Astar_cont', 2;
     'DHD',         'MPC_Astar',      2;
     'DHD',         'MPC_Astar',      3;
     'DHD',         'MPC_Astar',      4;

@@ -1,4 +1,4 @@
-function out = MPC_Astar(params,ctrl,wave,states,uInd_history)
+function out = MPC_Astar_cont(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end
 
@@ -18,7 +18,7 @@ else
     % define nodes
     nodes = initlizeNodes(nU,states,params,ctrl,k,uIndPrev);
 
-    % Begin Astar algorith 
+    % Begin Astar algorithm
     flag = 0; iter = 0; iterMax = 1e3;
     while flag == 0
 
@@ -27,13 +27,6 @@ else
         
         % reorder nodes
         nodes = nodes(idx);
-
-        if params.simu.time(fineTimeInd) == 62
-            nodes(1:4).history;
-            size(nodes);
-            %nodes.cost
-            a=1;
-        end
 
         % Get info about this node
         d = length(nodes(1).history);
@@ -91,8 +84,7 @@ else
 end
 
 % Output
-U = params.hyd.Force2Torque(states(2))*params.hyd.ptoForceOptions(:);
-out.controlValue = U(uInd);
+out.controlValue = getTorque(params,states,uInd);
 out.controlIndex = uInd;
 end
 
@@ -109,12 +101,20 @@ function node = initlizeNodes(nU,x0,params,ctrl,k,uIndPrev)
     end
 end
 
+function u = getTorque(params,states,uInd)
+% Find the current force rail
+u_tmp = params.hyd.Force2Torque(states(2))*params.hyd.ptoForceOptions(uInd);
+
+% now subtact the force that the electric motor would take out
+u = u_tmp - 3e7*states(1);
+end
+
 
 function [E_absorbed,E_terminal,xf] = ComputeCost(params,ctrl,uInd,uIndPrev,x,k,d)
 % Compute the energy if we are picking a controller for block k and are
 % anayling block d in the Astar algorithm.
 
-u = params.hyd.Force2Torque(x(2))*params.hyd.ptoForceOptions(uInd);
+u = getTorque(params,x,uInd);
 
 % Compute cost
 % Energy in this block

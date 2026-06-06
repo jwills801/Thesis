@@ -65,3 +65,28 @@ eval.mechRGP = eval.aveMechPow/ctrl.optTraj.avePow;
 eval.elecRGP = eval.aveElecPow/ctrl.optTraj.avePow;
     disp(['      Mechanical: ', num2str(eval.mechRGP,2)])
     disp(['      Electrical: ',num2str(eval.elecRGP,2),eha_str_RGP]);
+
+
+%%
+H = freqresp(params.phys.sys , 2*pi/params.simu.peakPeriod);
+Kp = real(1/H(1)');
+Ki = .8*(-2*pi/5*imag(1/H(1)'));
+
+Y = dyn.u; X = [dyn.theta, dyn.thetaDot];
+tmp=pinv(X)*Y; Ki = -tmp(1); Kp = -tmp(2);
+
+artificialSpringTorque = Ki*theta;
+artificialDampTorque = Kp*thetaDot;
+NonSpringTorque = -dyn.u - Ki*theta;
+
+figure, plot(dyn.t,-dyn.u,dyn.t,artificialSpringTorque,dyn.t,artificialDampTorque,dyn.t,NonSpringTorque)
+legend('Control Torque','Spring torque','Damping torque','Non-Spring Torque'), ylabel('Torque [Nm]'), xlabel('Time [s]'), grid
+
+NonSpringPower = NonSpringTorque .* thetaDot;
+figure, plot(dyn.t, eval.mechPower/1e3,dyn.t,NonSpringPower/1e3)
+legend('Full Power','Power without Spring Torque'), ylabel('Power [kW]'), xlabel('Time [s]'), grid
+%%
+figure, plot(dyn.t,-dyn.u,dyn.t,dLdt*1e7)
+
+
+

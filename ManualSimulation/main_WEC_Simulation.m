@@ -64,10 +64,13 @@ addpath("control/")
 ctrl = getControl(params,wave);
 
 %% Simulate Dynamics
+close all
 addpath("dynamics/")
+params.uInd = [ones(25,1);4*ones(20,1);ones(5,1);3*ones(15,1);ones(5,1);2*ones(11,1)]; size(params.uInd);
+params.damping = 3e7;
 dyn = timeLoop(params,wave,ctrl);
 
-%% Evaluate
+% Evaluate
 addpath("evaluation/")
 eval = evaluate(params,dyn);
 

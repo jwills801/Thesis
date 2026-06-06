@@ -1,4 +1,4 @@
-function out = MPC_Astar(params,ctrl,wave,states,uInd_history)
+function out = MPC_Astar_cont2(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end
 
@@ -15,87 +15,14 @@ else
     % Find Which control index are in
     k = floor((fineTimeInd-1)/ctrl.horizonInd)+1;
 
-    % define nodes
-    nodes = initlizeNodes(nU,states,params,ctrl,k,uIndPrev);
-
-    % Begin Astar algorith 
-    flag = 0; iter = 0; iterMax = 1e3;
-    while flag == 0
-
-        % sort nodes
-        [~, idx] = sort([nodes.cost], 'ascend');
-        
-        % reorder nodes
-        nodes = nodes(idx);
-
-        if params.simu.time(fineTimeInd) == 62
-            nodes(1:4).history;
-            size(nodes);
-            %nodes.cost
-            a=1;
-        end
-
-        % Get info about this node
-        d = length(nodes(1).history);
-        uIndPrev = nodes(1).history(end);
-        xf = nodes(1).xf;
-
-        % Check if we reached the end of the horizon
-        if d == ctrl.m_Astar
-            flag = 1;
-            break
-        end
-
-        % look at all the possible options from this node
-        for uInd = 1:nU
-            [E_step, E_term, x_next] = ComputeCost(params, ctrl, uInd, uIndPrev, xf, k, d+1);
-        
-            new_node.history = [nodes(1).history, uInd];
-            new_node.xf = x_next;
-            new_node.E_absorbed = nodes(1).E_absorbed + E_step;
-            new_node.cost = new_node.E_absorbed + E_term;
-
-            % Add child to the pool
-            nodes = [nodes, new_node]; 
-        end
-
-        % remove parent node
-        nodes(1) = [];
-
-        % Dont do too many iterations
-        iter = iter +1;
-        if iter>iterMax
-            flag = -1
-        end
-    end % while loop
-
-    % Use control from the beginning of the history
-    uInd = nodes(1).history(1);
-
-    % Efficiency
-    fullTree = (nU^ctrl.m_Astar-1)/(nU-1);
-    AStar_eff = iter/fullTree;
-    
-    % if (params.simu.time(fineTimeInd) < 61) && (params.simu.time(fineTimeInd) > 60)
-    %     nodes(1).cost
-    %     [cap,rod] = params.hyd.getVolandFlow(params,nodes(1).xf)
-    %     [min(params.hyd.switchMap.velA_vals), max(params.hyd.switchMap.velA_vals)]
-    %     [min(params.hyd.switchMap.vol_vals), max(params.hyd.switchMap.vol_vals)]
-    %     a=1;
-    % end
-
-    if ~isfinite(nodes(1).cost)
-        params.simu.time(fineTimeInd)
-    end
+    uInd = params.uInd(k);
 
 end
 
 % Output
-U = params.hyd.Force2Torque(states(2))*params.hyd.ptoForceOptions(:);
-out.controlValue = U(uInd);
+out.controlValue = getTorque(params,states,uInd);
 out.controlIndex = uInd;
 end
-
 
 
 function node = initlizeNodes(nU,x0,params,ctrl,k,uIndPrev)
@@ -109,12 +36,20 @@ function node = initlizeNodes(nU,x0,params,ctrl,k,uIndPrev)
     end
 end
 
+function u = getTorque(params,states,uInd)
+% Find the current force rail
+u_tmp = params.hyd.Force2Torque(states(2))*params.hyd.ptoForceOptions(uInd);
+
+% now subtact the force that the electric motor would take out
+u = u_tmp - params.damping*states(1);
+end
+
 
 function [E_absorbed,E_terminal,xf] = ComputeCost(params,ctrl,uInd,uIndPrev,x,k,d)
 % Compute the energy if we are picking a controller for block k and are
 % anayling block d in the Astar algorithm.
 
-u = params.hyd.Force2Torque(x(2))*params.hyd.ptoForceOptions(uInd);
+u = getTorque(params,x,uInd);
 
 % Compute cost
 % Energy in this block
