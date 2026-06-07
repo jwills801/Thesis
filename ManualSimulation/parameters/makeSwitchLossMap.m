@@ -19,20 +19,21 @@ HydraulicEffort = hydraulic_effort(beta,alpha);
 
 % Valve constants
     % set valve constant k: Q = k*sqrt(deltaP)
-valveConstant = 1*capArea/sqrt(2e6); % m^3/s/Pa: Speed of cylinder times area divided by sqrt of allowed pressure drop
+% valveConstant = 1*capArea/sqrt(1e6); % m^3/s/Pa: Speed of cylinder times area divided by sqrt of allowed pressure drop
+valveConstant = (7200/60000)/sqrt(0.5e6); % 2WRC-4x size 80 valve
 valveDampingRatio = 0.7;
 valveNaturalFrequency = 25*2*pi; % 25 Hz, 25*2*pi rad/s - takes about 20 ms to open
 valveTF = tf(valveNaturalFrequency^2,[1,2*valveNaturalFrequency*valveDampingRatio,valveNaturalFrequency^2]);
 
 % Time parameters
-finalTime = 0.1;
+finalTime = 0.2;
 dt = 1e-5;
 tspan = 0:dt:finalTime;
 
 % Set the delay indices to be used
     % These are amounts of indecies to be delayed
     % The amounds of time span from 0 to 0.02 seconds
-maxdelay = round(.02/dt);
+maxdelay = round((finalTime-.05)/dt);
 delayvals = linspace(1,maxdelay,11);
 
 % Set the volume and velocity*Area parameters
@@ -42,7 +43,7 @@ velA_vals = linspace(-1.5*capArea,1.5*capArea,velA_n);
 vol_n = 11;
 vol_vals = linspace(hoseVolume,hoseVolume+stroke*capArea,vol_n);
 
-% Initialize matrices
+%% Initialize matrices
 Eloss = NaN(length(PR),length(PR),velA_n,vol_n); delaychosen = NaN(length(PR),length(PR),velA_n,vol_n);
 Eloss_delay = NaN(size(delayvals));
 
@@ -102,22 +103,44 @@ for m = 1:length(vol_vals)
                         Loss_h = Q_C.*(phi_h-phi_A);
                         Loss_l = Q_O.*(phi_l-phi_A);
 
-                        if min(PA) > -1e5
+                        if min(PA) > 0
                             Eloss_delay(ii) =  sum(Loss_h+Loss_l)*dt;
                         else
                             Eloss_delay(ii) =  NaN;
                         end
-                        if  0% j == 1 && k == 2 && i == 11 && m == 1 && ii == 2
+
+                        % optional plots
+                        velA = .11; vol = .35; PRind_old = 2; PRind_new = 1;
+                        [~,iVal] = min(abs(velA_vals-velA));
+                        [~,mVal] = min(abs(vol_vals-vol));
+                        if  j == PRind_old && k == PRind_new && i == iVal && m == mVal && ii == 10
                             figure, title(['Delay value: ',num2str(delay)])
                             subplot(121), plot(tspan,PA)
                             subplot(122), plot(tspan,xon,tspan,xoff)
 
                             figure, plot(tspan(1:end-1),Loss_h,tspan(1:end-1),Loss_l), legend('Closing','Opening')
-                            Eloss_delay(ii)
                             min(Eloss_delay)
                         end
+
                     end
                     [Eloss(j,k,i,m), delaychosen(j,k,i,m)] = min(Eloss_delay);
+
+                    % optional plots
+                    velA = .11; vol = .5; PRind_old = 2; PRind_new = 1;
+                    [~,iVal] = min(abs(velA_vals-velA));
+                    [~,mVal] = min(abs(vol_vals-vol));
+                    if  j == PRind_old && k == PRind_new && i == iVal && m == mVal
+                        velA_vals(iVal)
+                        vol_vals(mVal)
+                        figure, title(['Delay value: ',num2str(delay)])
+                        subplot(121), plot(tspan,PA)
+                        subplot(122), plot(tspan,xon,tspan,xoff)
+
+                        figure, plot(tspan(1:end-1),Loss_h,tspan(1:end-1),Loss_l), legend('Closing','Opening')
+                        Eloss_delay
+                        delaychosen(j,k,i,m)
+                        min(Eloss_delay)
+                    end
                 end
             end
         end
@@ -136,7 +159,15 @@ out.PR = PR;
 out.finalTime = finalTime;
 out.hoseVolume = hoseVolume;
 
-figure, surf(velA_vals,vol_vals,squeeze(Eloss(1,2,:,:)))
+figure, surf(vol_vals,velA_vals,squeeze(Eloss(1,2,:,:)))
+title('Pressure Rail 1 to 2')
+ylabel('Rate Change of Volume [m^3/s]'),xlabel('Volume [m^3]'),zlabel('Energy Loss [J]')
+
+figure, surf(vol_vals,velA_vals,squeeze(Eloss(2,1,:,:)))
+title('Pressure Rail 2 to 1')
+ylabel('Rate Change of Volume [m^3/s]'),xlabel('Volume [m^3]'),zlabel('Energy Loss [J]')
+
+a=1;
 end
 
 

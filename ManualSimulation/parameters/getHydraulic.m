@@ -16,16 +16,18 @@ hyd.Force2Torque = @(theta) cylHorizDist*r_cyl*cos(theta)./hyd.L(theta);
 hyd.L_equilib = hyd.L(0);
 hyd.L_retract = hyd.L_equilib - hyd.stroke/2; % Length of cylinder at full retraction
 
+% Reservoir pressure
+p0 = .5; % MPa
 switch runParams.drive
     case {'DHD', 'PassivePump'}
         if runParams.pressure_rails == 2
-            hyd.pressureRails = [0 35]*1e6;
+            hyd.pressureRails = [p0 35]*1e6;
         elseif runParams.pressure_rails == 3
-            hyd.pressureRails = [0 17 35]*1e6;
+            hyd.pressureRails = [p0 17 35]*1e6;
         elseif runParams.pressure_rails == 4
-            hyd.pressureRails = [0 8 27 35]*1e6;
+            hyd.pressureRails = [p0 8 27 35]*1e6;
         elseif runParams.pressure_rails == 5
-            hyd.pressureRails = [0 3.5 18.5 29 35]*1e6;
+            hyd.pressureRails = [p0 3.5 18.5 29 35]*1e6;
         end
         hyd.pressureRails = hyd.pressureRails/35e6*runParams.highPressure;
         
@@ -38,8 +40,8 @@ end
 % load or calculate switching losses
 switch runParams.drive
     case 'DHD'
-        % switchMap = makeSwitchLossMap(hyd); save("parameters/SwitchMap.mat","switchMap")
-        load("SwitchMap.mat")
+        switchMap = makeSwitchLossMap(hyd); save("parameters/SwitchMap.mat","switchMap")
+        %load("SwitchMap.mat")
         hyd.switchMap = switchMap;
     case {'EHA','MPC_Astar_cont'}
         % Load EHA losses
