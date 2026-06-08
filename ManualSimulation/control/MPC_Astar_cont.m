@@ -18,6 +18,8 @@ else
     % define nodes
     nodes = initlizeNodes(nU,states,params,ctrl,k,uIndPrev);
 
+    % find 
+
     % Begin Astar algorithm
     flag = 0; iter = 0; iterMax = 1e3;
     while flag == 0
@@ -84,7 +86,8 @@ else
 end
 
 % Output
-out.controlValue = getTorque(params,states,uInd);
+[u_elec,u_hyd] = getTorque(params,states,uInd);
+out.controlValue = u_elec+u_hyd;
 out.controlIndex = uInd;
 end
 
@@ -101,12 +104,34 @@ function node = initlizeNodes(nU,x0,params,ctrl,k,uIndPrev)
     end
 end
 
-function u = getTorque(params,states,uInd)
-% Find the current force rail
-u_tmp = params.hyd.Force2Torque(states(2))*params.hyd.ptoForceOptions(uInd);
+function [u_elec,u_hyd] = getTorque(params,states,uInd)
+dampingCoeff = 2e7;
 
-% now subtact the force that the electric motor would take out
-u = u_tmp - 3e7*states(1);
+% Find the current force rail
+F2T = params.hyd.Force2Torque(states(2));
+u_hyd = F2T*params.hyd.ptoForceOptions(uInd);
+
+% What is the pressure at the valve side of the hydraulic motor
+[~,Pind] = ind2sub(size(params.hyd.ptoForceOptions),uInd);
+Pvalve = params.hyd.pressureRails(Pind);
+
+% Min damping torque possible at this selection of Pvalve
+    % We can reduce the pressure in the rod until we get to zero
+    % Solve for the resulting torque which will always negative
+u_damp_min = -Pvalve*params.hyd.rodArea*F2T;
+
+% Max torque possible at this selection of Pvalve
+    % Dont over pressure the rod side
+    % Solve for the resulting torque which will always positive
+maxP = 40e6;
+u_damp_max = (maxP-Pvalve)*params.hyd.rodArea*F2T;
+
+% The electric torque will always oppose the velocity
+u_damp_unconstrained = -dampingCoeff*states(1);
+
+% The electric torque must be larger than the min and smaller than the max
+u_elec = min(max(u_damp_unconstrained,u_damp_min),u_damp_max);
+
 end
 
 
@@ -114,7 +139,8 @@ function [E_absorbed,E_terminal,xf] = ComputeCost(params,ctrl,uInd,uIndPrev,x,k,
 % Compute the energy if we are picking a controller for block k and are
 % anayling block d in the Astar algorithm.
 
-u = getTorque(params,x,uInd);
+[u_elec,u_hyd] = getTorque(params,x,uInd);
+u = u_elec+u_hyd;
 
 % Compute cost
 % Energy in this block
@@ -123,15 +149,24 @@ b_exc = ctrl.b_exc(k+d-1);
 Q_local = ctrl.Q_local;
 E_mech = (w'*x+b_exc)*u + u^2*Q_local;
 
-% Switching Loss
+% Losses
 if params.runParams.considerLosses
     E_sw = getSwitchingLoss(params,x,uInd,uIndPrev);
+
+    % Electric loss
+    [~,rod] = params.hyd.getVolandFlow(params,x);
+    Q = rod.velA;
+    deltaP = u_elec ./ params.hyd.Force2Torque(x(2)) /params.hyd.rodArea;
+    ElecLoss = params.hyd.EHA.LossFunc(Q,deltaP) * ctrl.timeHorizon;
 else
     E_sw = 0;
+    ElecLoss = 0;
 end
 
+
+
 % Absorbed energy
-E_absorbed = E_mech + E_sw;
+E_absorbed = E_mech + E_sw + ElecLoss;
 
 % Advance state
 M_block = ctrl.M_block;

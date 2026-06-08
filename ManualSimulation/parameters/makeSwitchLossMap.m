@@ -113,7 +113,7 @@ for m = 1:length(vol_vals)
                         velA = .11; vol = .35; PRind_old = 2; PRind_new = 1;
                         [~,iVal] = min(abs(velA_vals-velA));
                         [~,mVal] = min(abs(vol_vals-vol));
-                        if  j == PRind_old && k == PRind_new && i == iVal && m == mVal && ii == 10
+                        if  0%j == PRind_old && k == PRind_new && i == iVal && m == mVal && ii == 10
                             figure, title(['Delay value: ',num2str(delay)])
                             subplot(121), plot(tspan,PA)
                             subplot(122), plot(tspan,xon,tspan,xoff)
@@ -129,7 +129,7 @@ for m = 1:length(vol_vals)
                     velA = .11; vol = .5; PRind_old = 2; PRind_new = 1;
                     [~,iVal] = min(abs(velA_vals-velA));
                     [~,mVal] = min(abs(vol_vals-vol));
-                    if  j == PRind_old && k == PRind_new && i == iVal && m == mVal
+                    if  0%j == PRind_old && k == PRind_new && i == iVal && m == mVal
                         velA_vals(iVal)
                         vol_vals(mVal)
                         figure, title(['Delay value: ',num2str(delay)])
@@ -159,15 +159,18 @@ out.PR = PR;
 out.finalTime = finalTime;
 out.hoseVolume = hoseVolume;
 
-figure, surf(vol_vals,velA_vals,squeeze(Eloss(1,2,:,:)))
-title('Pressure Rail 1 to 2')
-ylabel('Rate Change of Volume [m^3/s]'),xlabel('Volume [m^3]'),zlabel('Energy Loss [J]')
+% optional plots
+if 0
+    figure, surf(vol_vals,velA_vals,squeeze(Eloss(1,2,:,:)))
+    title('Pressure Rail 1 to 2')
+    ylabel('Rate Change of Volume [m^3/s]'),xlabel('Volume [m^3]'),zlabel('Energy Loss [J]')
 
-figure, surf(vol_vals,velA_vals,squeeze(Eloss(2,1,:,:)))
-title('Pressure Rail 2 to 1')
-ylabel('Rate Change of Volume [m^3/s]'),xlabel('Volume [m^3]'),zlabel('Energy Loss [J]')
+    figure, surf(vol_vals,velA_vals,squeeze(Eloss(2,1,:,:)))
+    title('Pressure Rail 2 to 1')
+    ylabel('Rate Change of Volume [m^3/s]'),xlabel('Volume [m^3]'),zlabel('Energy Loss [J]')
 
-a=1;
+    a=1;
+end
 end
 
 

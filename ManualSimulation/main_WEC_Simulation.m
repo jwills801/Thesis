@@ -1,31 +1,34 @@
 %% Code Structure
 % main_WEC_Simulation.m           # Top-level script
     % parameters/                     # Package for parameter functions
+        % getHydraulic.m
         % getParameters.m
         % getPhysical.m
-        % getHydraulic.m
         % getSimulation.m
-        % getControl.m
+        % makeEHALossMap.m
+        % makeSwitchLossMap.m
     % wave/                           # Package for wave functions
+        % calculateWavePower.m
         % generateExcitingTorque.m
         % getSpectrum.m	
         % getTorqueTimeSeries.m
-        % calculateWavePower.m
     %control/                        # Package for control functions
-        % getControl.m
         % controlLaw.m
-        % getOptimal.m
         % coulombDamping.m
+        % getControl.m
+        % getOptimal.m
+        % MPC_Astar_cont.m
+        % MPC_Astar.m
+        % MPC_QP.m
         % PIcontrol.m
         % slidingMode.m
-    	% MPC_DP.m
-        % MPC.m
     % dynamics/
         % timeLoop.m
         % advanceStep.m
-    % evaluation/                           # Package for loss analysis
+    % evaluation/                      # Package for loss analysis
         % evaluate.m
-        % makeSwitchLossMap.m
+        % getEHALoss.m
+        % getHECMLoss.m
         % getValveLoss.m
     % plotting/                       # Package for visualization
         % plotAll.m
@@ -64,13 +67,10 @@ addpath("control/")
 ctrl = getControl(params,wave);
 
 %% Simulate Dynamics
-close all
 addpath("dynamics/")
-params.uInd = [ones(25,1);4*ones(20,1);ones(5,1);3*ones(15,1);ones(5,1);2*ones(11,1)]; size(params.uInd);
-params.damping = 3e7;
 dyn = timeLoop(params,wave,ctrl);
 
-% Evaluate
+%% Evaluate
 addpath("evaluation/")
 eval = evaluate(params,dyn);
 

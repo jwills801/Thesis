@@ -40,14 +40,13 @@ end
 % load or calculate switching losses
 switch runParams.drive
     case 'DHD'
-        switchMap = makeSwitchLossMap(hyd); save("parameters/SwitchMap.mat","switchMap")
-        %load("SwitchMap.mat")
+        %switchMap = makeSwitchLossMap(hyd); save("parameters/SwitchMap.mat","switchMap")
+        load("SwitchMap.mat")
         hyd.switchMap = switchMap;
-    case {'EHA','MPC_Astar_cont'}
-        % Load EHA losses
-        vMax = 1;
-        hyd.EHA = makeEHALossMap(hyd.capArea,vMax);
 end
+% Load EHA losses
+vMax = 1;
+hyd.EHA = makeEHALossMap(hyd.capArea,vMax);
 
 % Output function handels
 hyd.getVolandFlow = @getVolandFlow;

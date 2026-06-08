@@ -4,7 +4,7 @@ switch params.runParams.drive
     case {'DHD', 'PassivePump'}
     % Calculate switching losses
         eval = getValveLoss(params,dyn);
-        eval = getHECMLoss(eval,params,dyn);
+        eval = getMotorLoss(eval,params,dyn);
     case {'EHA'}
         eval = getEHALoss(params,dyn);
 end

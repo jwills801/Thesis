@@ -10,7 +10,7 @@ switch params.runParams.controller
     case 'MPC_Astar'
         out = MPC_Astar(params,ctrl,wave,states,uInd_history);
     case 'MPC_Astar_cont'
-        out = MPC_Astar_cont2(params,ctrl,wave,states,uInd_history);
+        out = MPC_Astar_cont(params,ctrl,wave,states,uInd_history);
     case 'CoulombDamping'
         out = coulombDamping(params,states);
 end

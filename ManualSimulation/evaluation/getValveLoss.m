@@ -44,6 +44,7 @@ switch params.runParams.drive
 
         % Sum up losses
         loss = cap.switchLoss + rod.switchLoss + cap.steadyLoss + rod.steadyLoss;
+
         % losses after ramp up
         lossAfterRamp = loss(eventTimes(1:end-1) > params.simu.rampTime);
 
@@ -51,7 +52,7 @@ switch params.runParams.drive
         eval.switchTimes = eventTimes;
         eval.aveSwitchRate = switchRate;
     case 'PassivePump'
-        valveConstant = 1*params.hyd.capArea/sqrt(2e6);
+        valveConstant = params.hyd.switchMap.valveConstant;
 
         % Passive Pump only has steady loss
         cap.steadyLoss = openvalveLoss(params,cap,valveConstant,1,length(dyn.t)-1);
@@ -62,8 +63,6 @@ switch params.runParams.drive
 end
 
 
-
-
 % Output results
 eval.TotalLoss = sum(loss);
 eval.loss = loss;
@@ -71,7 +70,7 @@ eval.TotalLossAfterRamp = sum(lossAfterRamp);
 eval.aveLoss = eval.TotalLossAfterRamp / (params.simu.finalTime - params.simu.rampTime);
 eval.aveLossHat = NaN;
 
-% Optional plots
+%% Optional plots
 if 0
 figure, plot(eventTimes(1:end-1),cap.switchLoss, ...
     eventTimes(1:end-1),rod.switchLoss,...
@@ -85,6 +84,7 @@ legend('Cap Steady','Rod Steady')
 end
 end
 
+%% Additional Functions
 function switchLoss = interpolateLosses(params,switchMap,side,timeInd)
 % define variable to be interpolated on
 switchFrom = params.hyd.pressureRails(side.switchFromInd);

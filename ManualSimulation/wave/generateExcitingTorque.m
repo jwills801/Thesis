@@ -9,15 +9,19 @@ wave = struct();
         % body can move in all degrees of freedom and them adds constraints
         % later)
 
-% Generate Wave Spectrum
-wave.spectrum = getSpectrum(wave.w,...
-    params.simu.peakPeriod,...
-    params.simu.sigWaveHeight);
-
-% Regular Waves
-wave.spectrum.S_w(:) = 0;
-[~,wInd] = min(abs(wave.spectrum.w - 2*pi/params.simu.peakPeriod));
-wave.spectrum.S_w(wInd) = params.simu.sigWaveHeight^2;
+% Generate Wave Spectrum(wave type dependent)
+switch params.simu.waveType
+    case "polychromatic"
+        wave.spectrum = getSpectrum(wave.w,...
+            params.simu.peakPeriod,...
+            params.simu.sigWaveHeight);
+    case "monochromatic"
+        wave.spectrum.S_w = zeros(1,length(wave.w));
+        [~,wInd] = min(abs(wave.w - 2*pi/params.simu.peakPeriod));
+        wave.spectrum.S_w(wInd) = params.simu.sigWaveHeight^2;
+        wave.spectrum.w = wave.w';
+        wave.spectrum.dw = [0, diff(wave.w)];
+end
 
 % Calculate average wave resource
 wave.avePower = calculateWavePower(params,wave);
@@ -26,6 +30,7 @@ wave.torque = getTorqueTimeSeries(params,wave);
 
 end
 
+%% Other functions
 function [w,Kexc] = getExcited
 filename = 'oswec_new2.nc';
 % information vector (gives names of variables)

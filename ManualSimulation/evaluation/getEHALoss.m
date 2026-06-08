@@ -12,7 +12,6 @@ vel = params.hyd.dLdt(theta,thetaDot);
 loss = NaN(length(dyn.t),1);
 for t_ind = 1:length(dyn.t)
     loss(t_ind) = params.hyd.EHA.LossFunc(Q(t_ind),deltaP(t_ind));
-    
 end
 lossAfterRamp = loss(dyn.t > params.simu.rampTime);
 
