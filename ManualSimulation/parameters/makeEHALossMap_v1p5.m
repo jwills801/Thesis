@@ -1,3 +1,14 @@
+% makeEHALossMap_v1p5.m
+% Exploratory EHA model: constant (max) displacement, variable speed --
+% fracDisp fixed at 1, local ehaLoss solves for shaft speed w to match
+% commanded flow. NOTE: fits LossCoeffs against cylinder velocity
+% V=2.7574*thetaDot, not thetaDot itself -- a unit mismatch if plugged
+% into MPC_EHA as-is (off by 2.7574^2 on the quadratic term). Superseded
+% for controller use by makeEHALossMap_fixedDisp.m, which fixes this;
+% kept here for the standalone loss-map comparison plots.
+% Calls: none
+% Called by: none currently wired into a live path (used ad hoc from
+%   scratch comparison scripts during development)
 function EHA = makeEHALossMap_v1p5(A,vMax)
 %%
 nV = 100;
@@ -87,16 +98,7 @@ T_Ideal = deltaP*d*fracDisp*Scale;
 TLoss = Scale*(  abs(d*Cv*mu*w) + abs(d*(deltaP)*Cf) + abs(fracDisp*Ch*w^2*rho*d^(5/3)/2)  );
 T_Act = T_Ideal + sign(w)*TLoss; % |T_Act| needs be < |T_Ideal|
 
-% Power out with 90% effiency
-if T_Act < 0
-    P_out = .9*w*T_Act;
-    P_L_elect = -.1*w*T_Act; % the negative sign makes sure the loss is posative
-else
-    P_out = w*T_Act/.9;
-    P_L_elect =  (1/.9-1)*w*T_Act; % This loss accounts for energy that needs to come FROM the generator to the system.
-end
-
-% Power out with i^r losses
+% Power out with i^r losses (copper loss, proportional to T_Act^2)
 P_L_elect = (5e-5)*T_Act^2*sign(T_Act);
 P_out = w*T_Act + P_L_elect;
 

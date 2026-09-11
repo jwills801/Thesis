@@ -1,3 +1,11 @@
+% MPC_QP.m
+% Closed-form (unconstrained) quadratic-program solve, u* =
+% -(A+A')\B' with B=x0'*Bx+T'*Bt, using ctrl.MPC's precomputed cost
+% matrices (from getControl.m's MPC_EHA). For EHA the continuous u is
+% used directly; for DHD it's snapped to the nearest discrete PTO force
+% option.
+% Calls: none
+% Called by: control/controlLaw.m
 function out = MPC_QP(params,ctrl,wave,states,uInd_history)
 % Get position and velocity
 thetaDot = states(1);

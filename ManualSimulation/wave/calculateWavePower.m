@@ -1,3 +1,9 @@
+% calculateWavePower.m
+% Average incident wave power for the current spectrum, via the linear
+% dispersion relation (local sub-function CalculateWaveNumber, iterated
+% for finite water depth).
+% Calls: none
+% Called by: wave/generateExcitingTorque.m
 function power = calculateWavePower(params,wave)
 % load constants
 g = params.phys.g;

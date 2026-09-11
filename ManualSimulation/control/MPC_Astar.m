@@ -1,3 +1,11 @@
+% MPC_Astar.m
+% DHD's receding-horizon A* branch-and-bound search over discrete PTO
+% force combinations (cap-rail x rod-rail), using ctrl.termCost (from
+% getControl.m) as the terminal-cost heuristic and, if
+% params.runParams.considerLosses, the switch-loss map for switching
+% costs. Self-contained (local initlizeNodes/ComputeCost/getSwitchingLoss).
+% Calls: none
+% Called by: control/controlLaw.m
 function out = MPC_Astar(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end

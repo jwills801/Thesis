@@ -1,3 +1,10 @@
+% PIcontrol.m
+% Simple PI trajectory-tracking controller (gains from the plant's
+% frequency response at the peak period); for DHD, holds the discrete
+% rail choice unless the continuous PI output has drifted far enough from
+% it to warrant a switch.
+% Calls: none
+% Called by: control/controlLaw.m
 function out = PIcontrol(params,ctrl,states,uInd_history)
 % uInd_history is a vectory of the previous control inputs
 if isempty(uInd_history), uInd_history = 1; end

@@ -1,3 +1,10 @@
+% getEHALoss.m
+% EHA's loss accounting: evaluates the true pump-physics loss
+% (params.hyd.EHA.LossFunc) at every timestep from the actual simulated
+% (Q,deltaP) trajectory, plus the controller's internal quadratic-fit
+% estimate (LossCoeffs) for comparison (eval.aveLossHat vs eval.aveLoss).
+% Calls: none
+% Called by: evaluation/evaluate.m
 function eval = getEHALoss(params,dyn)
 %% Calculate volume and flow in each side
 [cap,~] = params.hyd.getVolandFlow(params,dyn.states);

@@ -1,3 +1,10 @@
+% getTorqueTimeSeries.m
+% Random-phase synthesis of the excitation torque time series from the
+% wave spectrum and the interpolated capytaine excitation coefficients,
+% with a startup ramp. Uses rng(1) for repeatability -- every run at the
+% same (Hs,Tp,finalTime) gets the identical wave realization.
+% Calls: none
+% Called by: wave/generateExcitingTorque.m
 function out = getTorqueTimeSeries(params,wave)
 
 % load parameters

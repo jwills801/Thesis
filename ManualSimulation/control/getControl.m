@@ -1,3 +1,15 @@
+% getControl.m
+% Builds the ctrl struct once per simulation run: the theoretical optimal
+% trajectory, plus whatever precomputed matrices the chosen controller
+% needs (MPC_QP's cost matrices, MPC_Astar's terminal-cost tables, etc.).
+% Does not call the per-timestep controllers themselves (controlLaw.m
+% does that later); the 'MPC_QP'/'MPC_Astar' switch cases here only build
+% their setup matrices.
+% Calls: getOptimal.m, control/getTransition.m, control/getUtilityMatrices.m
+% Called by: main_WEC_Simulation.m, parameters/optimizePressure.m,
+%   parameters/sizeCylinderArea.m, diagnostics/checkAstarVsBruteForce.m,
+%   checkEnergyBalance.m, checkMPC_EHA.m, checkTerminalCost.m,
+%   validatePhase2Subset.m
 function ctrl = getControl(params,wave)
 
 %% Get optimal trajectory and energy
@@ -11,7 +23,10 @@ switch params.runParams.controller
     case'MPC_QP'
         ctrl.timeHorizon = 5*params.simu.dt; % Length of a control step
         ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
-        ctrl.numHorizons = 2.5*params.simu.peakPeriod/ctrl.timeHorizon;
+        % Rounded: for arbitrary peakPeriod (e.g. swept sea states) this
+        % isn't guaranteed integer, which crashes NaN(n*m,m) downstream in
+        % getUtilityMatrices (see diagnostics/ReadMe.md).
+        ctrl.numHorizons = round(2.5*params.simu.peakPeriod/ctrl.timeHorizon);
 
         % Precompute Transition Matrices
         m = ctrl.numHorizons;
@@ -28,7 +43,8 @@ switch params.runParams.controller
     case {'MPC_Astar','MPC_Astar_cont'}
         ctrl.timeHorizon = .2; % Length of a control step
         ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
-        ctrl.numHorizons = 2.5*params.simu.peakPeriod/ctrl.timeHorizon;
+        % Rounded: see the MPC_QP case above for why.
+        ctrl.numHorizons = round(2.5*params.simu.peakPeriod/ctrl.timeHorizon);
 
         % Number of A star time steps
         ctrl.m_Astar = 5;
@@ -64,81 +80,11 @@ end
 
 
 
-function [M,H] = getTransition(params,N)
-% unpack parameters
-A = params.phys.sys.A;
-B = params.phys.sys.B;
-dt = params.simu.dt;
-
-% Two options for discretizing: Forward euler and ZOH
-% Forward Euler
-Phi = eye(size(A)) + A * dt;
-Gamma = B * dt;
-
-% Zero Order Hold
-Phi = expm(A * dt);
-Gamma = integral(@(s) expm(A*s), 0, dt, 'ArrayValued', true) * B;
-
-nx = size(Phi, 1);
-
-% Pre-allocate the large matrices
-M = zeros(nx * N, nx);
-H = zeros(nx * N, N);
-
-% Precompute the first column of H and the rows of M
-% We iterate forward: Phi^1*Gamma, Phi^2*Gamma, etc.
-current_Phi = Phi;
-current_Gamma = Gamma;
-
-for i = 1:N
-    row_idx = (i-1)*nx + 1 : i*nx;
-
-    % Fill M (Initial state effect)
-    M(row_idx, :) = current_Phi;
-
-    % Fill the first column-block of H_big
-    H(row_idx, 1) = current_Gamma;
-
-    % Update for next step
-    current_Phi = Phi * current_Phi;
-    current_Gamma = Phi * current_Gamma;
-end
-
-% Fill the rest of H
-% Each column is just a shifted version of the column to its left
-for j = 2:N
-    % Copy the previous column shifted down by nx rows
-    source_rows = 1 : (N-j+1)*nx;
-    dest_rows = (j-1)*nx + 1 : N*nx;
-
-    source_cols = (j-2) + 1 : (j-1);
-    dest_cols = (j-1) + 1 : j;
-
-    source_cols = 1;
-    dest_cols = j;
-
-    H(dest_rows, dest_cols) = H(source_rows, source_cols);
-end
-end
-
-function [L,C] = getUtilityMatrices(m,n)
-onesCol = ones(n,1);
-zerosCol = zeros(n,1);
-
-ei = [1;0;0;0];
-c_block = repmat(ei,n,1);
-
-L = NaN(n*m,m);
-C = zeros(4*n*m,m);
-for col = 1:m
-    L(:,col) = [repmat(zerosCol,col-1,1);
-        onesCol;
-        repmat(zerosCol,m-col,1)];
-    C(:,col) = [repmat(0*c_block,col-1,1);
-        c_block;
-        repmat(0*c_block,m-col,1)];
-end
-end
+% getTransition and getUtilityMatrices now live in their own files
+% (control/getTransition.m, control/getUtilityMatrices.m) so they can be
+% unit-tested directly from diagnostics/. They also no longer carry the
+% dead forward-Euler Phi/Gamma lines that used to be computed and then
+% immediately overwritten by the ZOH version.
 
 function out = waveEnergyContribution(gain,Texc)
 N = size(Texc,1); % Number of fine time steps
@@ -196,10 +142,9 @@ end
 
 function out = getTerminalCostMatrices(params,wave,dt,m,n,m_Astar)
 % Comput terminal cost matrices for inside the Astar method
+% (m_Astar is typically ~5 -- not long enough to warrant a waitbar)
 out(m_Astar) = struct();
-bar = waitbar(0,'Precomputing Terminal Cost Matrices');
 for d = 1:m_Astar
-    waitbar((d-1)/m_Astar,bar)
     N = (m-d)*n;
 
     % Get matrices
@@ -215,7 +160,6 @@ for d = 1:m_Astar
     out(d).rT = rT;
     out(d).b = b;
 end
-close(bar)
 end
 
 function out = MPC_EHA(params,M,H,L,C)

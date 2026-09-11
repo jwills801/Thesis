@@ -1,3 +1,19 @@
+% makeSwitchLossMap.m
+% Builds a tabulated (PR x PR x velA x vol) grid of DHD switching-event
+% energy loss, simulating valve-opening/closing dynamics and compressible
+% flow (local sub-functions hydraulic_effort/phi/g/oil_comp) at every
+% pressure-rail pair. Also returns the PassivePump check-valve constant.
+% Expensive (~67s for 2 rails, scaling roughly with (number of
+% rails)^2) -- see buildDenseSwitchMap.m for reusing one dense-grid map
+% across many candidate pressures instead of regenerating per candidate.
+% Calls: none
+% Called by: buildDenseSwitchMap.m, optimizePressure.m, sizeCylinderArea.m,
+%   main_WEC_Simulation.m (each regenerates fresh for the pressure rails
+%   actually in use). getHydraulic.m's own DHD case does NOT call this --
+%   it loads a stale precomputed SwitchMap.mat instead, regardless of the
+%   current pressureRails; callers that need it valid for their specific
+%   rails override params.hyd.switchMap afterward (see
+%   optimizePressure.m's comment).
 function out = makeSwitchLossMap(hyd)
 
 % This code will make a tabulated grid of points 

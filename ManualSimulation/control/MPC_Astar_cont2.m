@@ -1,3 +1,12 @@
+% MPC_Astar_cont2.m
+% DEAD CODE / unfinished: a DHD A* variant with a continuous electric
+% torque trim (u = rail torque - params.damping*thetaDot). References
+% params.uInd and params.damping, neither of which is ever set anywhere
+% in this codebase -- not wired into controlLaw.m's dispatch, not called
+% from anywhere. Left in place but flagged rather than deleted (see
+% diagnostics/ReadMe.md).
+% Calls: none
+% Called by: none
 function out = MPC_Astar_cont2(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end

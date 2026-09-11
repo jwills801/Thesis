@@ -1,3 +1,9 @@
+% getOptimal.m
+% Computes the theoretical impedance-matched optimal trajectory and
+% average power for the current sea state -- the RGP benchmark every
+% drivetrain's mechRGP/elecRGP is measured against.
+% Calls: none
+% Called by: control/getControl.m
 function optTraj = getOptimal(params,wave)
 t = wave.torque.time;
 

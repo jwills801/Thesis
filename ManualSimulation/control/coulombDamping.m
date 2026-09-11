@@ -1,3 +1,9 @@
+% coulombDamping.m
+% PassivePump's control law: a tanh-smoothed bang-bang torque between the
+% two extreme PTO force options (no real controller, just a passive
+% check-valve response).
+% Calls: none
+% Called by: control/controlLaw.m
 function out = coulombDamping(params,states)
 thetaDot = states(1);
 theta = states(2);

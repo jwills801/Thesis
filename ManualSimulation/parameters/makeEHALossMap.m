@@ -1,3 +1,13 @@
+% makeEHALossMap.m
+% Baseline EHA model: constant speed (2000 RPM), variable displacement.
+% Local ehaLoss solves for fracDisp to match commanded flow, computes
+% torque loss (viscous/Coulomb/windage) and i^2R copper loss. Fits the
+% quadratic loss surrogate (LossCoeffs) against (thetaDot [rad/s], torque
+% [Nm]) directly, matching how MPC_EHA (getControl.m) uses it.
+% Calls: none
+% Called by: parameters/getHydraulic.m, plotEHAEfficiencyMap.m (for the
+%   real-vs-fit comparison plot), makeEHALossMap_fixedDisp.m (references
+%   its ehaLoss physics in a comment only, does not call it)
 function EHA = makeEHALossMap(A,vMax)
 %%
 nw = 100;
@@ -99,16 +109,7 @@ TLoss = Scale*(  abs(d*Cv*mu*w) + abs(d*(deltaP)*Cf) + abs(fracDisp*Ch*w^2*rho*d
 Q_Ideal = fracDisp*d*w*Scale;
 T_Act = T_Ideal + sign(w)*TLoss; % |T_Act| needs be < |T_Ideal|
 
-% Power out with 90% effiency
-if T_Act < 0
-    P_out = .9*w*T_Act;
-    P_L_elect = -.1*w*T_Act; % the negative sign makes sure the loss is posative
-else
-    P_out = w*T_Act/.9;
-    P_L_elect =  (1/.9-1)*w*T_Act; % This loss accounts for energy that needs to come FROM the generator to the system.
-end
-
-% Power out with i^r losses
+% Power out with i^r losses (copper loss, proportional to T_Act^2)
 P_L_elect = (5e-5)*T_Act^2*sign(T_Act);
 P_out = w*T_Act + P_L_elect;
 

@@ -1,3 +1,13 @@
+% generateExcitingTorque.m
+% Builds the wave struct for a run: loads the capytaine-derived excitation
+% coefficients (local sub-function getExcited, reads oswec_new2.nc),
+% generates the wave spectrum, computes average wave power, and generates
+% the excitation torque time series.
+% Calls: wave/getSpectrum.m, calculateWavePower.m, getTorqueTimeSeries.m
+% Called by: main_WEC_Simulation.m, parameters/optimizePressure.m,
+%   parameters/sizeCylinderArea.m, diagnostics/checkAstarVsBruteForce.m,
+%   checkEnergyBalance.m, checkMPC_EHA.m, checkTerminalCost.m,
+%   validatePhase2Subset.m
 function wave = generateExcitingTorque(params)
 wave = struct();
 

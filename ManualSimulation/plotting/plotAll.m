@@ -1,3 +1,14 @@
+% plotAll.m
+% Diagnostic plots for a single run: control input/velocity tracking,
+% cylinder velocity, flap position, DHD switching-loss plots, EHA
+% estimated-vs-real loss/power, spring-torque decomposition, power
+% comparison. Also recomputes eval.aveElecPowHat/elecRGP_hat for EHA
+% display purposes (mechRGP/elecRGP themselves are computed in
+% evaluate.m, not here).
+% Calls: none (takes evaluate.m's output eval struct as an input
+%   argument and augments it with display-only fields; does not call
+%   evaluate.m itself)
+% Called by: main_WEC_Simulation.m
 function eval = plotAll(params,wave,ctrl,dyn,eval)
 
 
@@ -61,8 +72,8 @@ disp(['Mechanical Power = ', num2str(eval.aveMechPow/1e3,3), ' kW']);
 disp(['Drivetrain Loss = ', num2str(eval.aveLoss/1e3,3), ' kW ',eha_str_loss]);
 disp(['Electric Power = ', num2str(eval.aveElecPow/1e3,3), ' kW ',eha_str_pow]);
 disp('Relative Generated Power:')
-eval.mechRGP = eval.aveMechPow/ctrl.optTraj.avePow;
-eval.elecRGP = eval.aveElecPow/ctrl.optTraj.avePow;
+% eval.mechRGP / eval.elecRGP are now computed in evaluate.m (need
+% ctrl.optTraj.avePow, which evaluate.m now also receives).
     disp(['      Mechanical: ', num2str(eval.mechRGP,2)])
     disp(['      Electrical: ',num2str(eval.elecRGP,2),eha_str_RGP]);
 

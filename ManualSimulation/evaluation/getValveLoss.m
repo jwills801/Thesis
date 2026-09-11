@@ -1,3 +1,11 @@
+% getValveLoss.m
+% DHD/PassivePump throttling and switching losses. DHD: per-switching-event
+% loss via interpn against params.hyd.switchMap (built by
+% makeSwitchLossMap.m/buildDenseSwitchMap.m), plus open-valve loss between
+% switches. PassivePump: open-valve (check-valve) loss only, using
+% switchMap.valveConstant.
+% Calls: none
+% Called by: evaluation/evaluate.m
 function eval = getValveLoss(params,dyn)
 
 %% Calculate volume and flow in each side

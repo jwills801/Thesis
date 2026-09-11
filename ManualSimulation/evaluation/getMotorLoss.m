@@ -1,3 +1,12 @@
+% getMotorLoss.m
+% DHD-only: models the "series hydraulic-to-electric converter" trim
+% (the gap between the actual control torque and the nearest discrete
+% rail torque, u_elec=dyn.u-u_hyd) as if it passed through an EHA-style
+% generator, using params.hyd.EHA.LossFunc. Not called for PassivePump
+% (that gap there is just coulombDamping.m's tanh-smoothing artifact, not
+% a real actuator -- see evaluate.m's comment).
+% Calls: none
+% Called by: evaluation/evaluate.m
 function eval = getMotorLoss(eval,params,dyn)
 
 % Seperate hydraulic and electric torques
@@ -43,6 +52,8 @@ eval.TotalLossAfterRamp = eval.TotalLossAfterRamp + sum(ElecPowLossAfterRamp)*pa
 eval.aveLoss = eval.TotalLossAfterRamp / (params.simu.finalTime - params.simu.rampTime);
 
 % Plots
-figure, plot(dyn.t,E_hyd,dyn.t,E_elec,dyn.t,E_tot)
-legend('Hydraulic','Electric','Total'), ylabel('Energy [J]')
+if ~isfield(params.simu,'makePlots') || params.simu.makePlots
+    figure, plot(dyn.t,E_hyd,dyn.t,E_elec,dyn.t,E_tot)
+    legend('Hydraulic','Electric','Total'), ylabel('Energy [J]')
+end
 end

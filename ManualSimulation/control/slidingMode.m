@@ -1,3 +1,16 @@
+% slidingMode.m
+% Sliding-mode controller: tracks the optimal trajectory via a sliding
+% surface s=thetaDotError+lambda*thetaError, re-simulating a 2-step-ahead
+% horizon over all discrete rail-pair combinations whenever |s| exceeds
+% ctrl.phi. Has its own LOCAL getTransition sub-function (forward-Euler,
+% not ZOH) -- shadows control/getTransition.m's name but is a separate,
+% self-contained implementation, not a call to that file.
+% NOTE (known bug, see diagnostics/ReadMe.md): controlLaw.m dispatches on
+% 'SlidingMode' but Run_All_Cases.m/plotAll.m use 'Sliding Mode' (with a
+% space), and getControl.m has no case for it at all -- ctrl.lambda,
+% ctrl.phi, ctrl.horizonInd, ctrl.limitChoices are never set.
+% Calls: none (local getTransition sub-function only)
+% Called by: control/controlLaw.m
 function out = slidingMode(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control inputs
 

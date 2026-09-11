@@ -1,3 +1,12 @@
+% MPC_Astar_cont.m
+% DHD A* variant: same branch-and-bound rail search as MPC_Astar.m, but
+% adds a continuous electric-torque trim on top of the chosen discrete
+% rail (getTorque), with its own EHA-style copper-loss accounting
+% (params.hyd.EHA.LossFunc) for that trim. Self-contained; ctrl setup for
+% this controller is shared with MPC_Astar via getControl.m's
+% {'MPC_Astar','MPC_Astar_cont'} case.
+% Calls: none
+% Called by: control/controlLaw.m
 function out = MPC_Astar_cont(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end

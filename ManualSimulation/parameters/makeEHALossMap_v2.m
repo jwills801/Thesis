@@ -1,10 +1,15 @@
-% function EHA = makeEHALossMap_v2(A,vMax)
-close all
-A = .2;
-vMax = 1;
-% Previous function with constant speed
-EHA = makeEHALossMap(A,vMax);
-EHA = makeEHALossMap_v1p5(A,vMax);
+% makeEHALossMap_v2.m
+% Exploratory EHA model: both speed and displacement free -- local
+% ehaLoss sweeps 1000 candidate shaft speeds per (Q,deltaP) point and
+% picks whichever (speed,displacement) combination minimizes loss
+% (subject to |fracDisp|<=1). An idealized best-case bound, not a
+% controller-ready model (no LossCoeffs unit issue since it's never fed
+% to MPC_EHA). Uses a 1.5x pump-oversizing margin vs. the 1.2x in the
+% other two files -- a known inconsistency, not reconciled.
+% Calls: none
+% Called by: none currently wired into a live path (used ad hoc from
+%   scratch comparison scripts during development)
+function EHA = makeEHALossMap_v2(A,vMax)
 %%
 nthetaDot = 50;
 thetaDot_vals = linspace(-.4,.4,nthetaDot);
@@ -58,12 +63,12 @@ EHA = struct();
 EHA.LossCoeffs = [a b c d];
 EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A);
 
-if 1
+if 0
     % Plot loss map
     levels = round(linspace(min(Loss(:)),max(Loss(:)),10)/1e4)*1e4/1e3;
     figure, contour(ThetaDot,T,LossHat/1e3,levels,'showtext','on'), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Estimate')
     figure, contour(ThetaDot,T,Loss/1e3,levels,'showtext','on'), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Real Deal')
-    
+
     figure, contour(ThetaDot,T,Chi,[-.95 -.8 -.1 .1 .8 .95],'showtext','on'), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Fractional Disp')
     figure, surf(ThetaDot,T,Chi), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Fractional Disp')
     figure, contour(ThetaDot,T,Speed*60/2/pi,'showtext','on'), xlabel('Speed [rad/s]'), ylabel('Torque'), title('Shaft Speed [RPM]')
@@ -71,7 +76,7 @@ if 1
     % figure, surf(V,T,1e-7*T.^2), xlabel('Speed'), ylabel('Torque'), title('Electric Loss')
 end
 
-% end
+end
 
 function [Loss,Chi,Speed] = ehaLoss(Q,deltaP,maxFlow)
 % Define Pump Constants

@@ -1,28 +1,44 @@
+% Run_All_Cases.m
+% Runs main_WEC_Simulation.m (as a script) once per row of caseList,
+% collecting mechRGP/elecRGP into simMatrix. Currently hardcoded to only
+% run row 4 (`for i = 4%1:height(simMatrix)`), not the full table. Defines
+% two local helpers, both currently unused/dead in the active code path:
+% OptPressure (a disabled secant-search pressure optimizer, superseded by
+% parameters/optimizePressure.m's grid search) and table2latex (a LaTeX
+% table-export utility, call commented out).
+% Calls: main_WEC_Simulation.m (as a script, per case row)
+% Called by: none (top-level entry point)
+%
 % This code is just a way of running main_WEC_Simulation.m with different
 % parameters. The results from each set of parameters are collected here
 
 clear, close all
 %% Define cases to run
+% ConsiderLosses only takes effect for EHA (mechanical- vs
+% electrical-energy-optimized MPC_QP, see main_WEC_Simulation.m). DHD's
+% switching-loss handling is fixed at 1 inside main_WEC_Simulation.m's own
+% switch statement regardless of this column; PassivePump ignores it.
 caseList = {
-    'EHA',         'PI',             0;
-    'EHA',         'MPC_QP',         0;
-    'PassivePump', 'CoulombDamping', 2;
-    'DHD',         'MPC_Astar_cont', 2;
-    'DHD',         'MPC_Astar',      2;
-    'DHD',         'MPC_Astar',      3;
-    'DHD',         'MPC_Astar',      4;
-    'DHD',         'PI',             2;
-    'DHD',         'PI',             3;
-    'DHD',         'PI',             4;
-    'DHD',         'MPC_QP',         2;
-    'DHD',         'MPC_QP',         3;
-    'DHD',         'MPC_QP',         4;
-    'DHD',         'Sliding Mode',   2;
-    'DHD',         'Sliding Mode',   3;
-    'DHD',         'Sliding Mode',   4;
+    'EHA',         'PI',             0,  0;
+    'EHA',         'MPC_QP',         0,  0;
+    'EHA',         'MPC_QP',         0,  1;
+    'PassivePump', 'CoulombDamping', 2,  0;
+    'DHD',         'MPC_Astar_cont', 2,  1;
+    'DHD',         'MPC_Astar',      2,  1;
+    'DHD',         'MPC_Astar',      3,  1;
+    'DHD',         'MPC_Astar',      4,  1;
+    'DHD',         'PI',             2,  1;
+    'DHD',         'PI',             3,  1;
+    'DHD',         'PI',             4,  1;
+    'DHD',         'MPC_QP',         2,  1;
+    'DHD',         'MPC_QP',         3,  1;
+    'DHD',         'MPC_QP',         4,  1;
+    'DHD',         'Sliding Mode',   2,  1;
+    'DHD',         'Sliding Mode',   3,  1;
+    'DHD',         'Sliding Mode',   4,  1;
 };
 
-simMatrix = cell2table(caseList, 'VariableNames', {'Drivetrain', 'Controller', 'PressureRails'});
+simMatrix = cell2table(caseList, 'VariableNames', {'Drivetrain', 'Controller', 'PressureRails', 'ConsiderLosses'});
 
 %  Preallocate scalar columns for results
 simMatrix.MechRGP = NaN(height(simMatrix), 1);
@@ -39,6 +55,7 @@ for i = 4%1:height(simMatrix)
     runParams.drive = caseList{i, 1};
     runParams.controller = caseList{i, 2};
     runParams.pressure_rails = caseList{i, 3};
+    runParams.considerLosses = caseList{i, 4};
 
     % Display the current case being run
     disp('---------------------------------------------------------')

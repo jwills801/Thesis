@@ -1,3 +1,8 @@
+% getSpectrum.m
+% Pierson-Moskowitz spectrum for a fully-developed sea state (Hs,Tp) over
+% frequency vector w.
+% Calls: none
+% Called by: wave/generateExcitingTorque.m
 function out = getSpectrum(w,Tp,Hs)
 % Author: Jackson Wills
 % Date made: Feb 23, 2026
