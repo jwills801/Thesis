@@ -5,7 +5,7 @@
 % drivetrain family, with a short finalTime to keep runtime down. Not the
 % production sweep -- just proves the harness produces sane, non-NaN
 % results before a full run.
-% Calls: wave/humboldtSeaStates.m, parameters/optimizePressure.m,
+% Calls: wave/humboldtSeaStates.m, optimization/optimizePressure.m,
 %   getParameters.m, generateExcitingTorque.m, control/getControl.m,
 %   dynamics/timeLoop.m, evaluation/evaluate.m
 % Called by: none (top-level diagnostic script, run manually)
@@ -15,6 +15,7 @@ here = fileparts(mfilename('fullpath')); root = fileparts(here);
 addpath(fullfile(root,'parameters')); addpath(fullfile(root,'wave'));
 addpath(fullfile(root,'control')); addpath(fullfile(root,'dynamics'));
 addpath(fullfile(root,'evaluation'));
+addpath(fullfile(root,'models')); addpath(fullfile(root,'optimization'));
 
 seaStates = humboldtSeaStates();
 seaStates = seaStates(1:2,:); % validation subset: first 2 bins only

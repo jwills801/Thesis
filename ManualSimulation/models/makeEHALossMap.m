@@ -8,7 +8,8 @@
 % Called by: parameters/getHydraulic.m, plotEHAEfficiencyMap.m (for the
 %   real-vs-fit comparison plot), makeEHALossMap_fixedDisp.m (references
 %   its ehaLoss physics in a comment only, does not call it)
-function EHA = makeEHALossMap(A,vMax)
+function EHA = makeEHALossMap(A,vMax,copperCoeff)
+if nargin<3, copperCoeff = 5.0e-4; end % see ehaLoss's comment for calibration/derivation
 %%
 nw = 100;
 w_vals = linspace(-.5,.5,nw);
@@ -24,7 +25,7 @@ for i = 1:length(W(:))
     Q = V*A;
     F = T(i)/2.7574;
     deltaP = F/A;
-    Loss(i) = ehaLoss(Q,deltaP,vMax*A);
+    Loss(i) = ehaLoss(Q,deltaP,vMax*A,copperCoeff);
 end
 
 % Least Squares
@@ -54,7 +55,7 @@ end
 % output function
 EHA = struct();
 EHA.LossCoeffs = [a b c d];
-EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A);
+EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A,copperCoeff);
 
 if 0
     % Plot loss map
@@ -67,7 +68,7 @@ end
 a=1;
 end
 
-function Loss = ehaLoss(Q,deltaP,maxFlow)
+function Loss = ehaLoss(Q,deltaP,maxFlow,copperCoeff)
 % Define Pump Constants
 % Angular Velocity
 Wrpm = 2000; %revolutions per minute
@@ -110,7 +111,13 @@ Q_Ideal = fracDisp*d*w*Scale;
 T_Act = T_Ideal + sign(w)*TLoss; % |T_Act| needs be < |T_Ideal|
 
 % Power out with i^r losses (copper loss, proportional to T_Act^2)
-P_L_elect = (5e-5)*T_Act^2*sign(T_Act);
+% Coefficient is now an argument (default above), calibrated from a real
+% motor datasheet -- see diagnostics/ReadMe.md's "EHA copper-loss
+% coefficient recalibrated from real motor data" section.
+% No sign(T_Act) here -- I^2*R heat is never negative; see
+% makeEHALossMap_fixedDisp.m's comment and diagnostics/ReadMe.md's
+% sign-convention section for why that sign was wrong.
+P_L_elect = copperCoeff*T_Act^2;
 P_out = w*T_Act + P_L_elect;
 
 P_in = Q*deltaP;

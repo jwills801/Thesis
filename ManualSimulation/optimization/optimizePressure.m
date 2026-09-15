@@ -55,6 +55,9 @@ result = struct();
 result.pressureGrid = pressureGrid(:);
 result.mechRGP = NaN(size(result.pressureGrid));
 result.elecRGP = NaN(size(result.pressureGrid));
+result.aveMechPow = NaN(size(result.pressureGrid));
+result.aveElecPow = NaN(size(result.pressureGrid));
+result.nAstarCapHits = NaN(size(result.pressureGrid)); % 0 for non-MPC_Astar controllers
 
 for i = 1:numel(pressureGrid)
     thisRunParams = runParams;
@@ -84,9 +87,23 @@ for i = 1:numel(pressureGrid)
 
     result.mechRGP(i) = ev.mechRGP;
     result.elecRGP(i) = ev.elecRGP;
+    result.aveMechPow(i) = ev.aveMechPow;
+    result.aveElecPow(i) = ev.aveElecPow;
+    result.nAstarCapHits(i) = ev.nAstarCapHits;
 end
 
 [~,bestInd] = max(result.elecRGP);
 result.bestPressure = result.pressureGrid(bestInd);
 result.bestElecRGP = result.elecRGP(bestInd);
+result.bestMechRGP = result.mechRGP(bestInd);
+result.bestAveMechPow = result.aveMechPow(bestInd);
+result.bestAveElecPow = result.aveElecPow(bestInd);
+result.totalAstarCapHits = sum(result.nAstarCapHits);
+if result.totalAstarCapHits > 0
+    warning('optimizePressure:astarCapHits', ...
+        ['This pressure sweep hit its A* iteration cap %d time(s) across ' ...
+         '%d grid point(s) -- see MPC_Astar:iterCapHit warnings above for ' ...
+         'when. Results may reflect a truncated search, not the ' ...
+         'algorithm''s natural convergence.'], result.totalAstarCapHits, numel(pressureGrid));
+end
 end

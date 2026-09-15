@@ -4,10 +4,15 @@
 % getControl.m) as the terminal-cost heuristic and, if
 % params.runParams.considerLosses, the switch-loss map for switching
 % costs. Self-contained (local initlizeNodes/ComputeCost/getSwitchingLoss).
+% out.capHit is true when this window's search was truncated by
+% astarIterMax before reaching its normal d==m_Astar exit (also raises a
+% MPC_Astar:iterCapHit warning); controlLaw.m/timeLoop.m/evaluate.m
+% propagate this through to eval.nAstarCapHits for the whole simulation.
 % Calls: none
 % Called by: control/controlLaw.m
 function out = MPC_Astar(params,ctrl,wave,states,uInd_history)
 % uInd_history is a vectory of the previous control input indexes
+out.capHit = false; % overwritten below only if this window's search hits astarIterMax
 if isempty(uInd_history), uIndPrev = 1; else uIndPrev = uInd_history(end); end
 
 fineTimeInd = length(uInd_history)+1;
@@ -26,22 +31,31 @@ else
     % define nodes
     nodes = initlizeNodes(nU,states,params,ctrl,k,uIndPrev);
 
-    % Begin Astar algorith 
-    flag = 0; iter = 0; iterMax = 1e3;
+    % Begin Astar algorith
+    % iterMax overridable via runParams.astarIterMax (default 1000,
+    % unchanged for every existing caller). The node list grows by
+    % (nU-1) per iteration and is fully re-sorted every iteration (an
+    % O(n^2) cost, not fixed here -- see diagnostics/ReadMe.md), which is
+    % mild for small nU (e.g. 2-rail DHD, nU=4) but severe for large nU
+    % (4-rail DHD, nU=16: node list reaches ~15000 entries at iter=1000,
+    % re-sorted every one of ~2500 control windows per simulation --
+    % observed to take many hours for a single sim). Capping iterMax
+    % lower bounds worst-case runtime at the cost of the search
+    % sometimes falling back before reaching its normal d==m_Astar exit,
+    % i.e. a smaller compute budget, not a change to the search itself.
+    flag = 0; iter = 0;
+    if isfield(params.runParams,'astarIterMax')
+        iterMax = params.runParams.astarIterMax;
+    else
+        iterMax = 1e3;
+    end
     while flag == 0
 
         % sort nodes
         [~, idx] = sort([nodes.cost], 'ascend');
-        
+
         % reorder nodes
         nodes = nodes(idx);
-
-        if params.simu.time(fineTimeInd) == 62
-            nodes(1:4).history;
-            size(nodes);
-            %nodes.cost
-            a=1;
-        end
 
         % Get info about this node
         d = length(nodes(1).history);
@@ -73,7 +87,21 @@ else
         % Dont do too many iterations
         iter = iter +1;
         if iter>iterMax
-            flag = -1
+            flag = -1;
+            out.capHit = true;
+            % A cap this low should be rare/never for a well-configured
+            % run -- see astarIterMax's callers for the intended budget.
+            % If this fires often within one simulation, the search is
+            % being truncated before it naturally converges (d==m_Astar),
+            % which silently degrades this window's chosen control -- not
+            % a crash, so it needs this warning to be noticed at all.
+            % timeLoop.m/evaluate.m aggregate these into
+            % eval.nAstarCapHits so a whole simulation's total is visible
+            % without grepping logs.
+            warning('MPC_Astar:iterCapHit', ...
+                ['A* search hit its %d-iteration cap at t=%.3fs (m_Astar=%d, ' ...
+                 'nU=%d) before reaching its normal d==m_Astar exit.'], ...
+                iterMax, params.simu.time(fineTimeInd), ctrl.m_Astar, nU);
         end
     end % while loop
 
@@ -82,18 +110,11 @@ else
 
     % Efficiency
     fullTree = (nU^ctrl.m_Astar-1)/(nU-1);
-    AStar_eff = iter/fullTree;
-    
-    % if (params.simu.time(fineTimeInd) < 61) && (params.simu.time(fineTimeInd) > 60)
-    %     nodes(1).cost
-    %     [cap,rod] = params.hyd.getVolandFlow(params,nodes(1).xf)
-    %     [min(params.hyd.switchMap.velA_vals), max(params.hyd.switchMap.velA_vals)]
-    %     [min(params.hyd.switchMap.vol_vals), max(params.hyd.switchMap.vol_vals)]
-    %     a=1;
-    % end
+    AStar_eff = iter/fullTree; %#ok<NASGU>
 
     if ~isfinite(nodes(1).cost)
-        params.simu.time(fineTimeInd)
+        warning('MPC_Astar:nonfiniteCost', ...
+            'A* chose a non-finite-cost node at t=%.3fs.', params.simu.time(fineTimeInd));
     end
 
 end
@@ -179,9 +200,23 @@ for side = [cap, rod]
     switchVelA = side.velA;
     switchVol = side.vol + switchMap.hoseVolume;
 
-    % interpolate
+    % interpolate. With a large (or no) astarIterMax, the search's own
+    % multi-step lookahead (ComputeCost propagating xf several steps
+    % under a fixed candidate force) can predict velA/vol well outside
+    % switchMap's fixed +-1.5*capArea/[hoseVolume,hoseVolume+stroke*
+    % capArea] range -- a hypothetical branch several steps deep under a
+    % sustained aggressive rail choice has no reason to stay in-range,
+    % unlike the true simulated trajectory. Passing an explicit
+    % extrapolation value makes any such branch cost a fixed large
+    % penalty instead of silently NaN (observed: 89 non-finite-cost
+    % windows in one DHD2 run once astarIterMax stopped truncating the
+    % search before it reached this regime) -- finite so it still sorts
+    % correctly (unlike NaN) and sums cleanly with the rest of the cost,
+    % but large enough that a branch this far outside the map's modeled
+    % range never wins a comparison against an in-range one.
+    OUT_OF_RANGE_PENALTY = 1e12; % J -- swamps any real switching loss (O(1e2)-O(1e6) J)
     loss = interpn(switchMap.PR,switchMap.PR,switchMap.velA_vals,switchMap.vol_vals, switchMap.Eloss,...
-        switchFrom,switchTo,switchVelA,switchVol);
+        switchFrom,switchTo,switchVelA,switchVol,'linear',OUT_OF_RANGE_PENALTY);
 
     % Add up loss from each side
     E_sw = E_sw + loss;

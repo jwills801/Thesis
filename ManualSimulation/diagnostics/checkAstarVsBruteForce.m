@@ -14,6 +14,7 @@ clear; clc
 here = fileparts(mfilename('fullpath')); root = fileparts(here);
 addpath(fullfile(root,'parameters')); addpath(fullfile(root,'wave'));
 addpath(fullfile(root,'control'));
+addpath(fullfile(root,'models')); addpath(fullfile(root,'optimization'));
 
 runParams = struct('drive','DHD','controller','MPC_Astar','pressure_rails',2, ...
     'considerLosses',1,'rodArea',(0.0254*6)^2*pi,'capArea',1.5*(0.0254*6)^2*pi, ...

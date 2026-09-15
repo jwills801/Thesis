@@ -1,0 +1,9 @@
+=== Building 200ms dense switch map (corrected valve dynamics) ===
+Making switching losses took 1908.5014 seconds
+200ms build took 31.8 minutes
+
+=== Building 100ms dense switch map (corrected valve dynamics) ===
+Making switching losses took 1091.2476 seconds
+100ms build took 18.2 minutes
+
+Both switch maps rebuilt with the corrected 20.11Hz valve dynamics.

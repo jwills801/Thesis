@@ -9,40 +9,8 @@
 %   dynamics/timeLoop.m, evaluation/evaluate.m, plotting/plotAll.m
 % Called by: Run_All_Cases.m (as a script, once per case row)
 %
-%% Code Structure
-% main_WEC_Simulation.m           # Top-level script
-    % parameters/                     # Package for parameter functions
-        % getHydraulic.m
-        % getParameters.m
-        % getPhysical.m
-        % getSimulation.m
-        % makeEHALossMap.m
-        % makeSwitchLossMap.m
-    % wave/                           # Package for wave functions
-        % calculateWavePower.m
-        % generateExcitingTorque.m
-        % getSpectrum.m	
-        % getTorqueTimeSeries.m
-    %control/                        # Package for control functions
-        % controlLaw.m
-        % coulombDamping.m
-        % getControl.m
-        % getOptimal.m
-        % MPC_Astar_cont.m
-        % MPC_Astar.m
-        % MPC_QP.m
-        % PIcontrol.m
-        % slidingMode.m
-    % dynamics/
-        % timeLoop.m
-        % advanceStep.m
-    % evaluation/                      # Package for loss analysis
-        % evaluate.m
-        % getEHALoss.m
-        % getHECMLoss.m
-        % getValveLoss.m
-    % plotting/                       # Package for visualization
-        % plotAll.m
+% See README.md (repo root) for the full folder structure and data-flow
+% diagram -- not duplicated here to avoid the two going stale independently.
 
 % Assign parameters based on drivetrain selection
 switch runParams.drive
@@ -72,6 +40,8 @@ end
 tic
 % Load parameters
 addpath("parameters/")
+addpath("models/")
+addpath("optimization/")
 params = getParameters(runParams);
 %%
 

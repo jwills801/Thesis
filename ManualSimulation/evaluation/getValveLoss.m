@@ -1,7 +1,7 @@
 % getValveLoss.m
 % DHD/PassivePump throttling and switching losses. DHD: per-switching-event
 % loss via interpn against params.hyd.switchMap (built by
-% makeSwitchLossMap.m/buildDenseSwitchMap.m), plus open-valve loss between
+% models/makeSwitchLossMap.m/optimization/buildDenseSwitchMap.m), plus open-valve loss between
 % switches. PassivePump: open-valve (check-valve) loss only, using
 % switchMap.valveConstant.
 % Calls: none
@@ -72,9 +72,18 @@ end
 
 
 % Output results
-eval.TotalLoss = sum(loss);
+% NaN-tolerant sums: interpn (interpolateLosses, above) silently returns
+% NaN when a switching event's velA/vol falls outside switchMap's built
+% grid range -- e.g. under a degraded/aggressive control search that lets
+% the cylinder briefly overshoot its nominal operating range. A single
+% NaN in a plain sum() would otherwise invalidate the entire aggregate
+% loss from a small number of edge-case events. eval.nLossNaN records how
+% many were dropped, so a run with many of them (a real red flag, not
+% just an edge case) stays visible rather than silently averaged away.
+eval.nLossNaN = sum(isnan(loss));
+eval.TotalLoss = sum(loss,'omitnan');
 eval.loss = loss;
-eval.TotalLossAfterRamp = sum(lossAfterRamp);
+eval.TotalLossAfterRamp = sum(lossAfterRamp,'omitnan');
 eval.aveLoss = eval.TotalLossAfterRamp / (params.simu.finalTime - params.simu.rampTime);
 eval.aveLossHat = NaN;
 

@@ -1,10 +1,13 @@
 % controlLaw.m
 % Dispatches to the controller named in params.runParams.controller and
-% returns its chosen control torque for the current timestep.
+% returns its chosen control torque for the current timestep. Third
+% output capHit is true only for MPC_Astar windows where the search hit
+% its astarIterMax cap (false/absent for every other controller); see
+% MPC_Astar.m and timeLoop.m's dyn.nAstarCapHits.
 % Calls: PIcontrol.m, slidingMode.m, MPC_QP.m, MPC_Astar.m,
 %   MPC_Astar_cont.m, coulombDamping.m
 % Called by: dynamics/timeLoop.m, diagnostics/checkAstarVsBruteForce.m
-function [u, uInd] = controlLaw(params,ctrl,wave,states,uInd_history)
+function [u, uInd, capHit] = controlLaw(params,ctrl,wave,states,uInd_history)
 
 switch params.runParams.controller
     case 'PI'
@@ -22,4 +25,9 @@ switch params.runParams.controller
 end
 u = out.controlValue;
 uInd = out.controlIndex;
+if isfield(out,'capHit')
+    capHit = out.capHit;
+else
+    capHit = false;
+end
 end

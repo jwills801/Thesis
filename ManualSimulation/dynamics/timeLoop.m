@@ -1,10 +1,13 @@
 % timeLoop.m
 % The main time-domain simulation loop: at every fine timestep, asks
 % controlLaw.m for a control torque and advances the true plant one step
-% (advanceStep.m). Returns the full state/control/time history in dyn.
+% (advanceStep.m). Returns the full state/control/time history in dyn,
+% including dyn.nAstarCapHits -- the number of MPC_Astar control windows
+% (0 for every other controller) whose search was truncated by its
+% astarIterMax cap; see control/MPC_Astar.m.
 % Calls: control/controlLaw.m, dynamics/advanceStep.m
-% Called by: main_WEC_Simulation.m, parameters/optimizePressure.m,
-%   parameters/sizeCylinderArea.m, diagnostics/checkEnergyBalance.m,
+% Called by: main_WEC_Simulation.m, optimization/optimizePressure.m,
+%   optimization/sizeCylinderArea.m, diagnostics/checkEnergyBalance.m,
 %   validatePhase2Subset.m
 % (checkAstarVsBruteForce.m calls controlLaw.m directly instead, to
 % inspect a single decision without running the full time loop.)
@@ -28,12 +31,14 @@ u = NaN(length(t),1); u(1) = 0;
 % progress rather than every single step.
 waitbarObj = waitbar(0,'Simulating WEC Dynamics');
 updateEvery = max(1,round(length(t)/100));
+nAstarCapHits = 0;
 for timeInd = 1:length(t)-1
     if mod(timeInd,updateEvery) == 0
         waitbar(timeInd/length(t),waitbarObj);
     end
 
-    [u(timeInd), uInd(timeInd)] = controlLaw(params,ctrl,wave,states(:,timeInd),uInd(1:timeInd-1));
+    [u(timeInd), uInd(timeInd), capHit] = controlLaw(params,ctrl,wave,states(:,timeInd),uInd(1:timeInd-1));
+    nAstarCapHits = nAstarCapHits + capHit;
 
     states(:,timeInd+1) = advanceStep(states(:,timeInd),dt,sys,u(timeInd)+Texc(timeInd),params.phys.b);
 end
@@ -49,5 +54,6 @@ dyn.states = states;
 dyn.thetaDot = states(1,:)';
 dyn.theta = states(2,:)';
 dyn.t = t;
+dyn.nAstarCapHits = nAstarCapHits;
 
 end

@@ -36,13 +36,26 @@ HydraulicEffort = hydraulic_effort(beta,alpha);
 % Valve constants
     % set valve constant k: Q = k*sqrt(deltaP)
 % valveConstant = 1*capArea/sqrt(1e6); % m^3/s/Pa: Speed of cylinder times area divided by sqrt of allowed pressure drop
-valveConstant = (7200/60000)/sqrt(0.5e6); % 2WRC-4x size 80 valve
+valveConstant = (7200/60000)/sqrt(0.5e6); % 2WRC-4x size 80 valve (26ms response time)
 valveDampingRatio = 0.7;
-valveNaturalFrequency = 25*2*pi; % 25 Hz, 25*2*pi rad/s - takes about 20 ms to open
+% 20.11 Hz gives a 26ms 0-100% step rise time at this damping ratio --
+% tr = (pi-acos(zeta))/(wn*sqrt(1-zeta^2)), solved for wn -- matching the
+% valve's actual 26ms datasheet response time (line above). The previous
+% 25 Hz value gave ~20.9ms, not 26ms.
+valveNaturalFrequency = 20.11*2*pi;
 valveTF = tf(valveNaturalFrequency^2,[1,2*valveNaturalFrequency*valveDampingRatio,valveNaturalFrequency^2]);
 
-% Time parameters
-finalTime = 0.2;
+% Time parameters. finalTime MUST match control/getControl.m's
+% ctrl.timeHorizon (the coarse control step) -- getValveLoss.m sizes its
+% post-switch transition window from switchMap.finalTime, so a mismatch
+% here silently breaks the loss accounting. Overridable via hyd.switchTime
+% (e.g. to compare a faster control cadence); defaults to 0.2, unchanged
+% for every existing caller.
+if isfield(hyd,'switchTime')
+    finalTime = hyd.switchTime;
+else
+    finalTime = 0.2;
+end
 dt = 1e-5;
 tspan = 0:dt:finalTime;
 

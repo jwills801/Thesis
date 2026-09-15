@@ -4,8 +4,8 @@
 % generates the wave spectrum, computes average wave power, and generates
 % the excitation torque time series.
 % Calls: wave/getSpectrum.m, calculateWavePower.m, getTorqueTimeSeries.m
-% Called by: main_WEC_Simulation.m, parameters/optimizePressure.m,
-%   parameters/sizeCylinderArea.m, diagnostics/checkAstarVsBruteForce.m,
+% Called by: main_WEC_Simulation.m, optimization/optimizePressure.m,
+%   optimization/sizeCylinderArea.m, diagnostics/checkAstarVsBruteForce.m,
 %   checkEnergyBalance.m, checkMPC_EHA.m, checkTerminalCost.m,
 %   validatePhase2Subset.m
 function wave = generateExcitingTorque(params)

@@ -1,12 +1,14 @@
 % getHydraulic.m
-% Builds hyd: cylinder geometry, pressure rails (evenlySpacedRails.m for
-% 3/4-rail DHD/PassivePump interior placement), PTO force options, the
-% DHD switch-loss map (makeSwitchLossMap.m, or PassivePump's check-valve
-% constant), and the EHA loss map (makeEHALossMap.m, or
-% makeEHALossMap_fixedDisp.m if runParams.ehaFixedDisplacement).
-% Calls: evenlySpacedRails.m, makeSwitchLossMap.m, makeEHALossMap.m,
-%   makeEHALossMap_fixedDisp.m, plotEHAEfficiencyMap.m (opt-in diagnostic
-%   plot only, gated behind runParams.plotEHAEfficiency)
+% Builds hyd: cylinder geometry, pressure rails (optimization/evenlySpacedRails.m
+% for 3/4-rail DHD/PassivePump interior placement), PTO force options, the
+% DHD switch-loss map (models/makeSwitchLossMap.m, or PassivePump's check-valve
+% constant), and the EHA loss map (models/makeEHALossMap.m, always called
+% regardless of drive -- or models/makeEHALossMap_fixedDisp.m if
+% runParams.ehaFixedDisplacement).
+% Calls: optimization/evenlySpacedRails.m, models/makeSwitchLossMap.m,
+%   models/makeEHALossMap.m, models/makeEHALossMap_fixedDisp.m,
+%   plotting/plotEHAEfficiencyMap.m (opt-in diagnostic plot only, gated
+%   behind runParams.plotEHAEfficiency)
 % Called by: parameters/getParameters.m
 function hyd = getHydraulic(runParams)
 
@@ -25,6 +27,18 @@ hyd.Force2Torque = @(theta) cylHorizDist*r_cyl*cos(theta)./hyd.L(theta);
 % Find Important Lengths
 hyd.L_equilib = hyd.L(0);
 hyd.L_retract = hyd.L_equilib - hyd.stroke/2; % Length of cylinder at full retraction
+
+% Physical system pressure ceiling -- matches every family's 35MPa
+% cylinder-sizing target by default (runParams.highPressure overrides it,
+% for DHD/PassivePump's swept rail ceiling). Used by MPC_QP.m to saturate
+% EHA's unconstrained continuous force at the cylinder's physical limit
+% (capArea*maxPressure) -- DHD/PassivePump are already inherently bounded
+% by their discrete rail choices and don't need this.
+if isfield(runParams,'highPressure')
+    hyd.maxPressure = runParams.highPressure;
+else
+    hyd.maxPressure = 35e6;
+end
 
 % Reservoir pressure -- always 0.5MPa regardless of highPressure (fixing
 % a previous mistake where the low rail was scaled proportionally with

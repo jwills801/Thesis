@@ -20,7 +20,17 @@ I = 5.025e6; Iinf = 1.734e7;
 x1 = 1.9754; x2 = 1.1345; x3 = 7.6921;              % x*_t from main(1).tex
 Itot = I + Iinf;
 
-A_expected = [0,        -Khs/Itot, 0, -1/Itot;
+% Lorentz-linearized quadratic damping: B_lin = (8/(3*pi))*bTrue*V, with
+% bTrue the Morison-integrated true nonlinear coefficient (rho*Cd*W*
+% Hwet^4/8) and V=vMax/2.7574 (vMax=1 m/s, same design point used in
+% getHydraulic.m). See getPhysical.m's comment for the full derivation.
+rhoW = 1024; Cd = 4; flapWidth = 18; flapHeight = 8.9; waterDepthLocal = 8;
+Hwet = min(flapHeight, waterDepthLocal);
+bTrue = rhoW*Cd*flapWidth*Hwet^4/8;
+vMax = 1; thetaDotNominal = vMax/2.7574;
+Blin = (8/(3*pi))*bTrue*thetaDotNominal;
+
+A_expected = [-Blin/Itot, -Khs/Itot, 0, -1/Itot;
               1,         0,        0,  0;
               0,         0,        0, -x1;
               x3*1e7,    0,        1, -x2];

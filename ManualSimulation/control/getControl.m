@@ -6,8 +6,8 @@
 % does that later); the 'MPC_QP'/'MPC_Astar' switch cases here only build
 % their setup matrices.
 % Calls: getOptimal.m, control/getTransition.m, control/getUtilityMatrices.m
-% Called by: main_WEC_Simulation.m, parameters/optimizePressure.m,
-%   parameters/sizeCylinderArea.m, diagnostics/checkAstarVsBruteForce.m,
+% Called by: main_WEC_Simulation.m, optimization/optimizePressure.m,
+%   optimization/sizeCylinderArea.m, diagnostics/checkAstarVsBruteForce.m,
 %   checkEnergyBalance.m, checkMPC_EHA.m, checkTerminalCost.m,
 %   validatePhase2Subset.m
 function ctrl = getControl(params,wave)
@@ -26,7 +26,16 @@ switch params.runParams.controller
         % Rounded: for arbitrary peakPeriod (e.g. swept sea states) this
         % isn't guaranteed integer, which crashes NaN(n*m,m) downstream in
         % getUtilityMatrices (see diagnostics/ReadMe.md).
-        ctrl.numHorizons = round(2.5*params.simu.peakPeriod/ctrl.timeHorizon);
+        % Look-ahead depth, in wave periods -- overridable via
+        % runParams.mpcHorizonPeriods (default 2.5, unchanged for every
+        % existing caller) for a horizon-length convergence study, the
+        % same role runParams.mAstar plays for MPC_Astar.
+        if isfield(params.runParams,'mpcHorizonPeriods')
+            horizonPeriods = params.runParams.mpcHorizonPeriods;
+        else
+            horizonPeriods = 2.5;
+        end
+        ctrl.numHorizons = round(horizonPeriods*params.simu.peakPeriod/ctrl.timeHorizon);
 
         % Precompute Transition Matrices
         m = ctrl.numHorizons;
@@ -41,13 +50,45 @@ switch params.runParams.controller
 
         
     case {'MPC_Astar','MPC_Astar_cont'}
-        ctrl.timeHorizon = .2; % Length of a control step
+        % Length of a control step (rail decisions can only change this
+        % often). Overridable via runParams.controlDT -- MUST match
+        % whatever switchTime the switch-loss map in use was built with
+        % (models/makeSwitchLossMap.m), since getValveLoss.m sizes its
+        % post-switch transition window from the map's own finalTime.
+        % Defaults to 0.2, unchanged for every existing caller.
+        if isfield(params.runParams,'controlDT')
+            ctrl.timeHorizon = params.runParams.controlDT;
+        else
+            ctrl.timeHorizon = .2;
+        end
+        % Enforce the switchTime/controlDT match this whole file's
+        % comments assume, rather than trust the caller to remember it:
+        % a mismatched map silently sizes getValveLoss.m's post-switch
+        % transition window wrong instead of erroring. Only meaningful
+        % for DHD (PassivePump's switchMap.finalTime isn't tied to a
+        % control cadence the same way).
+        if strcmp(params.runParams.drive,'DHD') && isfield(params.hyd,'switchMap') ...
+                && isfield(params.hyd.switchMap,'finalTime')
+            assert(abs(params.hyd.switchMap.finalTime - ctrl.timeHorizon) < 1e-9, ...
+                'getControl:switchMapTimeMismatch', ...
+                ['params.hyd.switchMap was built with switchTime=%.3fs but this run''s ' ...
+                 'controlDT=%.3fs -- they must match (see models/makeSwitchLossMap.m). ' ...
+                 'Load/build the switch map for the coarse time step you actually want.'], ...
+                params.hyd.switchMap.finalTime, ctrl.timeHorizon);
+        end
         ctrl.horizonInd = round(ctrl.timeHorizon/params.simu.dt);
         % Rounded: see the MPC_QP case above for why.
         ctrl.numHorizons = round(2.5*params.simu.peakPeriod/ctrl.timeHorizon);
 
-        % Number of A star time steps
-        ctrl.m_Astar = 5;
+        % Number of A star time steps (horizon length of the branch-and-
+        % bound search). Overridable via runParams.mAstar for horizon-
+        % length sweeps (optimization/Run_AstarHorizonSearch.m); defaults
+        % to 5, unchanged from before, for every existing caller.
+        if isfield(params.runParams,'mAstar')
+            ctrl.m_Astar = params.runParams.mAstar;
+        else
+            ctrl.m_Astar = 5;
+        end
 
         % unwrap useful parameters
         m = ctrl.numHorizons; % This is the terminal cost horizon

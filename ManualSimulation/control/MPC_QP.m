@@ -2,8 +2,9 @@
 % Closed-form (unconstrained) quadratic-program solve, u* =
 % -(A+A')\B' with B=x0'*Bx+T'*Bt, using ctrl.MPC's precomputed cost
 % matrices (from getControl.m's MPC_EHA). For EHA the continuous u is
-% used directly; for DHD it's snapped to the nearest discrete PTO force
-% option.
+% saturated at the cylinder's physical force limit (capArea*
+% hyd.maxPressure) then used directly; for DHD it's snapped to the
+% nearest discrete PTO force option (inherently bounded already).
 % Calls: none
 % Called by: control/controlLaw.m
 function out = MPC_QP(params,ctrl,wave,states,uInd_history)
@@ -32,10 +33,20 @@ if mod(timeInd,ctrl.horizonInd) == 1
 % If we are using EHA we use the continuous control, if DHD then we discretize
     switch params.runParams.drive
         case 'EHA'
+            % Saturate at the cylinder's physical force limit
+            % (capArea*hyd.maxPressure -- EHA is symmetric, capArea=
+            % rodArea, so this applies equally in both directions)
+            % instead of letting the unconstrained QP solve imply an
+            % unphysical pressure. Never binds if EHA is sized to its
+            % literal peak force demand; binds (by design) once sized
+            % below that peak to trade a rare clipped spike for a
+            % smaller cylinder -- see diagnostics/ReadMe.md.
+            maxTorque = params.hyd.Force2Torque(theta) * params.hyd.capArea * params.hyd.maxPressure;
+            uSat = min(max(u(1), -maxTorque), maxTorque);
             % for the eha we will use the control index to keep track of
             % our zero order hold
-            out.controlValue = u(1);
-            out.controlIndex = u(1);
+            out.controlValue = uSat;
+            out.controlIndex = uSat;
         case 'DHD'
             % Get torque options
             ptoTorqueOptions = params.hyd.Force2Torque(theta)*params.hyd.ptoForceOptions(:);

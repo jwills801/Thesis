@@ -12,6 +12,7 @@ clear; clc
 here = fileparts(mfilename('fullpath')); root = fileparts(here);
 addpath(fullfile(root,'parameters')); addpath(fullfile(root,'wave'));
 addpath(fullfile(root,'control'));
+addpath(fullfile(root,'models')); addpath(fullfile(root,'optimization'));
 
 for considerLosses = [0 1]
     runParams = struct('drive','EHA','controller','MPC_QP', ...

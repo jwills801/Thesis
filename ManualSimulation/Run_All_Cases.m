@@ -2,10 +2,8 @@
 % Runs main_WEC_Simulation.m (as a script) once per row of caseList,
 % collecting mechRGP/elecRGP into simMatrix. Currently hardcoded to only
 % run row 4 (`for i = 4%1:height(simMatrix)`), not the full table. Defines
-% two local helpers, both currently unused/dead in the active code path:
-% OptPressure (a disabled secant-search pressure optimizer, superseded by
-% parameters/optimizePressure.m's grid search) and table2latex (a LaTeX
-% table-export utility, call commented out).
+% one local helper, table2latex (a LaTeX table-export utility), currently
+% unused (call commented out) but kept as reusable tooling.
 % Calls: main_WEC_Simulation.m (as a script, per case row)
 % Called by: none (top-level entry point)
 %
@@ -69,8 +67,8 @@ for i = 4%1:height(simMatrix)
         % the medium rails are set to be evenly spaced
     switch runParams.drive
         case {'DHD','PassivePump'}
-            % For optimizing pressure;
-            % runParams.highPressure = OptPressure(runParams)*1e6;
+            % For optimizing pressure per sea state, see
+            % optimization/optimizePressure.m (grid search).
 
             % For using a predetemrined value:
             runParams.highPressure = 35*1e6;
@@ -98,34 +96,9 @@ disp(simMatrix); % Displays text and scalars cleanly
 % latexText = table2latex(simMatrix);
 
 %% Other functions
-function P  = OptPressure(runParams)
-    iter = 0; itermax =10;
-    flag = 0;
-    P = 30; Pprev = 0; Jprev = 0;
-
-    while flag ==0
-    runParams.highPressure = P*1e6;
-    main_WEC_Simulation; close all
-    J = eval.elecRGP*100;
-
-    Pnew = P + 5*(J-Jprev)/(P-Pprev)
-
-    % If we have converged, then leave the loop
-    if (abs(P-Pprev) < 1) && (abs(J-Jprev) < 1)
-        flag = 1;
-    end
-
-    % update for next cycle
-    Jprev = J; Pprev = P; P = Pnew;
-
-    % If we have too many iterations then leave
-    iter = iter +1;
-    if iter > itermax
-        flag = -1;
-        disp('Max iterations reached on pressure optimization')
-    end
-    end
-end
+% (OptPressure, a hand-rolled secant-search pressure optimizer, removed --
+% superseded by optimization/optimizePressure.m's grid search, which also
+% regenerates the DHD switch-loss map correctly per candidate pressure.)
 
 function latexStr = table2latex(T, varargin)
 % TABLE2LATEX Converts a MATLAB table into a LaTeX tabular text string.

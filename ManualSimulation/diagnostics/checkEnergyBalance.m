@@ -13,6 +13,7 @@ here = fileparts(mfilename('fullpath')); root = fileparts(here);
 addpath(fullfile(root,'parameters')); addpath(fullfile(root,'wave'));
 addpath(fullfile(root,'control')); addpath(fullfile(root,'dynamics'));
 addpath(fullfile(root,'evaluation'));
+addpath(fullfile(root,'models')); addpath(fullfile(root,'optimization'));
 
 cases = {
     'PassivePump','CoulombDamping',2

@@ -1,0 +1,61 @@
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2024 The MathWorks, Inc.
+             R2024b Update 1 (24.2.0.2740171) 64-bit (glnxa64)
+                             September 20, 2024
+
+ 
+To get started, type doc.
+For product information, visit www.mathworks.com.
+ 
+
+Built 16 tasks (2 EHA variants x 8 sea states).
+No parallel pool available (Undefined function 'gcp' for input arguments of type 'char'.) -- running sequentially.
+[16/16] EHA_elec, sea state 8 (Hs=5.00,Tp=12.72): mechRGP=0.815 elecRGP=0.549
+[15/16] EHA_elec, sea state 7 (Hs=3.66,Tp=10.80): mechRGP=0.798 elecRGP=0.543
+[14/16] EHA_elec, sea state 6 (Hs=2.87,Tp=13.19): mechRGP=0.829 elecRGP=0.576
+[13/16] EHA_elec, sea state 5 (Hs=2.56,Tp=9.11): mechRGP=0.778 elecRGP=0.527
+[12/16] EHA_elec, sea state 4 (Hs=2.26,Tp=10.97): mechRGP=0.801 elecRGP=0.550
+[11/16] EHA_elec, sea state 3 (Hs=2.02,Tp=6.96): mechRGP=0.763 elecRGP=0.514
+[10/16] EHA_elec, sea state 2 (Hs=1.44,Tp=8.99): mechRGP=0.777 elecRGP=0.528
+[9/16] EHA_elec, sea state 1 (Hs=1.12,Tp=6.85): mechRGP=0.763 elecRGP=0.515
+[8/16] EHA_mech, sea state 8 (Hs=5.00,Tp=12.72): mechRGP=0.964 elecRGP=0.231
+[7/16] EHA_mech, sea state 7 (Hs=3.66,Tp=10.80): mechRGP=1.018 elecRGP=0.146
+[6/16] EHA_mech, sea state 6 (Hs=2.87,Tp=13.19): mechRGP=1.025 elecRGP=0.212
+[5/16] EHA_mech, sea state 5 (Hs=2.56,Tp=9.11): mechRGP=1.024 elecRGP=0.112
+[4/16] EHA_mech, sea state 4 (Hs=2.26,Tp=10.97): mechRGP=1.028 elecRGP=0.171
+[3/16] EHA_mech, sea state 3 (Hs=2.02,Tp=6.96): mechRGP=1.017 elecRGP=0.091
+[2/16] EHA_mech, sea state 2 (Hs=1.44,Tp=8.99): mechRGP=1.024 elecRGP=0.125
+[1/16] EHA_mech, sea state 1 (Hs=1.12,Tp=6.85): mechRGP=1.018 elecRGP=0.096
+
+All tasks submitted/completed. Aggregating...
+Found 16 completed task file(s) in /home/jackson/Documents/Thesis/ManualSimulation/results/EHA_allSeaStates
+Wrote /home/jackson/Documents/Thesis/ManualSimulation/results/EHA_allSeaStates/summary.csv and /home/jackson/Documents/Thesis/ManualSimulation/results/EHA_allSeaStates/summary.mat
+      Variant       SeaStateIdx     Hs_m      Tp_s     Probability    MechRGP    ElecRGP     AveMechPow_kW    AveElecPow_kW    AveLoss_kW
+    ____________    ___________    ______    ______    ___________    _______    ________    _____________    _____________    __________
+
+    {'EHA_elec'}         1         1.1185    6.8499      0.15095      0.76315     0.51472       35.431           23.897          11.534  
+    {'EHA_elec'}         2          1.439    8.9859      0.16615      0.77681     0.52777       61.085           41.502          19.584  
+    {'EHA_elec'}         3         2.0219    6.9627      0.21446      0.76282     0.51384       116.75           78.644          38.107  
+    {'EHA_elec'}         4         2.2579     10.97      0.13294      0.80053     0.55047       138.85           95.481          43.373  
+    {'EHA_elec'}         5         2.5628    9.1095      0.14884      0.77816     0.52707       193.18           130.84          62.333  
+    {'EHA_elec'}         6         2.8673    13.189     0.061819      0.82904     0.57624       196.49           136.57          59.917  
+    {'EHA_elec'}         7         3.6567      10.8     0.093228      0.79847     0.54307       367.42            249.9          117.53  
+    {'EHA_elec'}         8         4.9953    12.725     0.031609      0.81548     0.54944       608.22            409.8          198.43  
+    {'EHA_mech'}         1         1.1185    6.8499      0.15095       1.0176    0.096337       47.246           4.4726          42.773  
+    {'EHA_mech'}         2          1.439    8.9859      0.16615       1.0242     0.12476       80.536           9.8106          70.725  
+    {'EHA_mech'}         3         2.0219    6.9627      0.21446       1.0174     0.09086       155.72           13.906          141.81  
+    {'EHA_mech'}         4         2.2579     10.97      0.13294       1.0278     0.17127       178.28           29.706          148.58  
+    {'EHA_mech'}         5         2.5628    9.1095      0.14884       1.0242     0.11224       254.24           27.864          226.38  
+    {'EHA_mech'}         6         2.8673    13.189     0.061819       1.0246     0.21189       242.83           50.218          192.61  
+    {'EHA_mech'}         7         3.6567      10.8     0.093228        1.018     0.14644       468.44           67.384          401.05  
+    {'EHA_mech'}         8         4.9953    12.725     0.031609      0.96378      0.2311       718.83           172.36          546.46  
+
+
+--- Completion check (assuming 8 sea states) ---
+EHA_mech   8/8
+EHA_elec   8/8
+
+--- Probability-weighted (expected, across the wave climate) ---
+EHA_mech   expected mechRGP=1.0198 expected elecRGP=0.1283
+EHA_elec   expected mechRGP=0.7816 expected elecRGP=0.5308

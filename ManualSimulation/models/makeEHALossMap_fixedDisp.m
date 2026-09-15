@@ -7,7 +7,8 @@
 % runParams.ehaFixedDisplacement).
 % Calls: none
 % Called by: parameters/getHydraulic.m
-function EHA = makeEHALossMap_fixedDisp(A,vMax)
+function EHA = makeEHALossMap_fixedDisp(A,vMax,copperCoeff)
+if nargin<3, copperCoeff = 5.0e-4; end % see ehaLoss's comment for calibration/derivation
 % Fixed-displacement (chi=1), variable-speed EHA loss map. Shaft speed is
 % solved (not fixed at 2000 RPM) to match the commanded flow at fracDisp=1
 % -- same physics as makeEHALossMap_v1p5.m's ehaLoss, but LossCoeffs here
@@ -28,7 +29,7 @@ for i = 1:length(W(:))
     Q = V*A;
     F = T(i)/2.7574;
     deltaP = F/A;
-    Loss(i) = ehaLoss(Q,deltaP,vMax*A);
+    Loss(i) = ehaLoss(Q,deltaP,vMax*A,copperCoeff);
 end
 
 % Least Squares
@@ -47,10 +48,10 @@ d = coeffs(4);
 
 EHA = struct();
 EHA.LossCoeffs = [a b c d];
-EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A);
+EHA.LossFunc = @(Q,deltaP) ehaLoss(Q,deltaP,vMax*A,copperCoeff);
 end
 
-function Loss = ehaLoss(Q,deltaP,maxFlow)
+function Loss = ehaLoss(Q,deltaP,maxFlow,copperCoeff)
 % Same pump physics/coefficients as makeEHALossMap.m and _v1p5.m, but
 % fracDisp fixed at 1 (max displacement) and shaft speed w solved to match
 % the commanded flow -- i.e. the quasi-static "fixed displacement,
@@ -81,8 +82,20 @@ TLoss = Scale*(  abs(d*Cv*mu*w) + abs(d*(deltaP)*Cf) + abs(fracDisp*Ch*w^2*rho*d
 T_Ideal = deltaP*d*fracDisp*Scale;
 T_Act = T_Ideal + sign(w)*TLoss;
 
-% Copper loss (i^2*R, proportional to T_Act^2) -- see makeEHALossMap.m
-P_L_elect = (5e-5)*T_Act^2*sign(T_Act);
+% Copper loss (i^2*R, proportional to T_Act^2) -- see makeEHALossMap.m.
+% Coefficient is now an argument (default above), calibrated from a real
+% motor datasheet rather than a target power fraction -- see
+% diagnostics/ReadMe.md's "EHA copper-loss coefficient recalibrated from
+% real motor data" section for the derivation.
+% No sign(T_Act) here -- I^2*R heat is never negative (current appears
+% squared), so the magnitude is the whole physical quantity. The removed
+% sign(T_Act) was a mistaken stand-in for motoring/generating direction
+% (it tracks sign(T_Act)~=sign(deltaP), not the real direction
+% sign(Q*deltaP)=sign(thetaDot)*sign(deltaP)) -- see diagnostics/
+% ReadMe.md's sign-convention section for the derivation of why that
+% produced a clean torque-sign-dependent (not direction-dependent)
+% asymmetry in electric efficiency.
+P_L_elect = copperCoeff*T_Act^2;
 P_out = w*T_Act + P_L_elect;
 
 P_in = Q*deltaP;
